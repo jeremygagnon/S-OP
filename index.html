@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>S&amp;OP Sales Analysis Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#161a23;
+  --panel:#1e2330;
+  --panel-2:#191e29;
+  --inset:#12161f;
+  --ink:#f2f3f5;
+  --ink-2:#c4c8d4;
+  --muted:#878ea0;
+  --faint:#565d72;
+  --line:#2c3347;
+  --line-2:#232a3a;
+  --teal:#3ddc8a;
+  --teal-bright:#5ee3a0;
+  --lav:#a78bfa;
+  --amber:#f0b73d;
+  --coral:#ff6b5c;
+  --accent:#ff7a3d;
+  --pre:#5b9bf0;
+  --ipr:#3ddc8a;
+  --vape:#f0b73d;
+  --ext:#ff7a3d;
+  --accent-soft:#3a2316;
+  --mark-grad:linear-gradient(150deg,#2a2017,#1c1410);
+  --lead-grad:linear-gradient(160deg,#222838,#191e29);
+  --chart-grid:rgba(255,255,255,.05);
+  --chart-tick:#878ea0;
+  --chart-axis:#2c3347;
+  --chart-tip-bg:#1e2330;
+  --chart-tip-border:#3d4660;
+  --font:'Syne',-apple-system,system-ui,sans-serif;
+  --mono:'DM Mono',ui-monospace,Menlo,monospace;
+}
+:root[data-theme="light"]{
+  --bg:#f0ede9;
+  --panel:#ffffff;
+  --panel-2:#f7f5f3;
+  --inset:#e8e4e0;
+  --ink:#111111;
+  --ink-2:#444444;
+  --muted:#888888;
+  --faint:#aaa49c;
+  --line:#e0dbd5;
+  --line-2:#ece8e3;
+  --teal:#1a7a4a;
+  --teal-bright:#15824f;
+  --lav:#7c3aed;
+  --amber:#b87000;
+  --coral:#c0392b;
+  --accent:#e8622a;
+  --pre:#1a5fa8;
+  --ipr:#1a7a4a;
+  --vape:#b87000;
+  --ext:#e8622a;
+  --accent-soft:#fff4ef;
+  --mark-grad:linear-gradient(150deg,#fff4ef,#ffe2d3);
+  --lead-grad:linear-gradient(160deg,#ffffff,#fbf2ec);
+  --chart-grid:rgba(17,17,17,.07);
+  --chart-tick:#9a948c;
+  --chart-axis:#e0dbd5;
+  --chart-tip-bg:#ffffff;
+  --chart-tip-border:#e0dbd5;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;transition:background .2s ease,color .2s ease;}
+body{padding:28px clamp(16px,3vw,40px) 64px;max-width:1320px;margin:0 auto;}
+.mono{font-family:var(--mono);}
+.pos{color:var(--teal-bright);} .neg{color:var(--coral);} .muted{color:var(--muted);} .faint{color:var(--faint);}
+
+/* ---------- topbar ---------- */
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:18px;padding-bottom:20px;margin-bottom:24px;border-bottom:1px solid var(--line);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-logo{height:30px;width:auto;display:block;flex-shrink:0;}
+.brand-div{width:1px;height:26px;background:var(--line);flex-shrink:0;}
+.brand h1{font-size:21px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;}
+.period{display:flex;align-items:center;gap:14px;}
+.period-meta{text-align:right;}
+.period-meta .k{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;}
+.period-meta .v{font-size:12px;color:var(--ink-2);font-family:var(--mono);margin-top:3px;}
+.pill-group{display:flex;gap:3px;background:var(--panel-2);border-radius:9px;padding:3px;border:1px solid var(--line);}
+.pill{font-size:12px;padding:6px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:var(--font);font-weight:500;transition:all .15s;}
+.pill:hover{color:var(--ink-2);}
+.pill.active{background:var(--accent-soft);color:var(--accent);}
+.theme-toggle{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:color .15s,border-color .15s,background .15s;flex-shrink:0;}
+.theme-toggle:hover{color:var(--ink);background:var(--accent-soft);}
+
+/* ---------- section heads ---------- */
+.eyebrow{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:0.14em;text-transform:uppercase;display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line-2);}
+
+/* ---------- KPI band ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.kpi .lab{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:11px;}
+.kpi .big{font-size:34px;font-weight:600;font-family:var(--mono);line-height:0.95;letter-spacing:-0.01em;}
+.kpi .big .unit{font-size:15px;color:var(--faint);font-weight:400;margin-left:3px;}
+.kpi .sub{font-size:11px;font-family:var(--mono);margin-top:9px;color:var(--muted);}
+.kpi.lead{background:var(--lead-grad);}
+
+/* attainment meter inside lead kpi */
+.att-meter{margin-top:13px;height:7px;border-radius:4px;background:var(--inset);position:relative;overflow:hidden;}
+.att-meter .fill{position:absolute;left:0;top:0;height:100%;border-radius:4px;}
+.att-meter .plan{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink-2);opacity:.55;}
+
+/* ---------- product performance ---------- */
+.prod-row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:30px;}
+.prod{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+.prod-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:15px;}
+.prod-name{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink);}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.chip{font-size:10px;font-family:var(--mono);padding:3px 8px;border-radius:5px;letter-spacing:0.02em;white-space:nowrap;}
+.chip.over{background:rgba(61,220,138,.14);color:var(--teal-bright);}
+.chip.near{background:rgba(240,183,61,.14);color:var(--amber);}
+.chip.under{background:rgba(255,107,92,.14);color:var(--coral);}
+.chip.nu{background:rgba(135,142,160,.12);color:var(--muted);}
+.prod-att{font-size:30px;font-weight:600;font-family:var(--mono);line-height:1;letter-spacing:-0.01em;}
+.prod-att .of{font-size:11px;color:var(--faint);font-family:var(--mono);font-weight:400;letter-spacing:0;}
+.prod-bar{margin-top:13px;height:8px;border-radius:5px;background:var(--inset);position:relative;overflow:hidden;}
+.prod-bar .fill{position:absolute;left:0;top:0;height:100%;border-radius:5px;opacity:.9;}
+.prod-bar .plan{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-2);opacity:.6;}
+.prod-nums{display:flex;justify-content:space-between;margin-top:13px;padding-top:13px;border-top:1px solid var(--line-2);}
+.prod-nums .col .k{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+.prod-nums .col .vv{font-size:14px;color:var(--ink);font-family:var(--mono);font-weight:500;margin-top:4px;}
+.prod-nums .col:last-child{text-align:right;}
+.mom-spark{position:relative;width:100%;height:118px;margin-bottom:13px;}
+
+/* in-progress strip */
+.inprog{display:flex;align-items:center;gap:11px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 16px;margin-bottom:30px;font-size:12px;color:var(--ink-2);}
+.inprog .tag{font-size:9px;font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);background:rgba(240,183,61,.14);padding:3px 8px;border-radius:5px;}
+.inprog b{font-family:var(--mono);color:var(--ink);font-weight:500;}
+
+/* ---------- legend ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+.leg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);font-family:var(--mono);}
+.leg-sq{width:11px;height:3px;border-radius:2px;flex-shrink:0;}
+
+/* ---------- app layout + sidebar nav ---------- */
+.layout{display:grid;grid-template-columns:214px minmax(0,1fr);gap:24px;align-items:start;}
+.sidebar{position:sticky;top:20px;}
+.nav{display:flex;flex-direction:column;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;}
+.nav-sec{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.12em;text-transform:uppercase;padding:13px 10px 7px;}
+.nav-sec.first{padding-top:5px;}
+.nav-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:transparent;border:none;cursor:pointer;border-radius:9px;padding:9px 11px;color:var(--ink-2);font-family:var(--font);font-weight:500;transition:background .14s,color .14s;}
+.nav-item:hover{background:var(--panel-2);color:var(--ink);}
+.nav-item.active{background:var(--accent-soft);}
+.nav-item.active .ni-name{color:var(--accent);}
+.ni-name{font-size:13px;display:flex;align-items:center;gap:8px;}
+.ni-val{font-size:11px;font-family:var(--mono);color:var(--muted);flex-shrink:0;}
+.ni-tag{font-size:8px;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;color:var(--amber);background:rgba(240,183,61,.14);padding:2px 5px;border-radius:4px;}
+.page-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.page-title{font-size:19px;font-weight:600;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px;}
+.page-title svg{color:var(--accent);}
+.page-kicker{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:0.08em;text-transform:uppercase;}
+
+/* ---------- month cards ---------- */
+.month-list{display:flex;flex-direction:column;gap:16px;}
+.month-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.mc-head{background:var(--panel-2);padding:15px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.mc-name{font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px;}
+.mc-name svg{color:var(--accent);}
+.badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.tb{font-size:10px;font-family:var(--mono);padding:4px 9px;border-radius:6px;letter-spacing:0.02em;}
+.tb-vol{background:rgba(167,139,250,.14);color:var(--lav);}
+.tb-up{background:rgba(61,220,138,.14);color:var(--teal-bright);}
+.tb-dn{background:rgba(255,107,92,.14);color:var(--coral);}
+.tb-nu{background:rgba(135,142,160,.12);color:var(--muted);}
+
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line);}
+.stat{background:var(--panel);padding:15px 20px;}
+.stat .k{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+.stat .v{font-size:25px;font-weight:600;font-family:var(--mono);line-height:1;letter-spacing:-0.01em;}
+.stat .v.teal{color:var(--teal);} .stat .v.lav{color:var(--lav);} .stat .v.amber{color:var(--amber);}
+.stat .s{font-size:11px;font-family:var(--mono);margin-top:7px;color:var(--muted);}
+
+/* ---------- category page ---------- */
+.cat-sec{padding:17px 20px;border-top:1px solid var(--line-2);}
+.cat-sec:first-child{border-top:none;}
+.cat-chart-wide{position:relative;width:100%;height:230px;}
+.mtable{border-top:1px solid var(--line);}
+.mrow{display:grid;gap:12px;padding:13px 20px;border-top:1px solid var(--line-2);align-items:center;}
+.mrow:first-child{border-top:none;}
+.mrow.head{padding:11px 20px;}
+.mrow.head>div{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+.mrow.head>div:not(:first-child){text-align:right;}
+.mc-month{font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;}
+.mc-month .ni-tag{margin-left:2px;}
+.mc-cell{font-size:14px;font-family:var(--mono);font-weight:500;text-align:right;}
+.mc-cell.teal{color:var(--teal);} .mc-cell.lav{color:var(--lav);}
+
+/* ---------- month-over-month panel ---------- */
+.mom-analysis{margin-bottom:16px;}
+.mom-grid{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;}
+.mom-col{padding:20px 24px;}
+.mom-col.r{text-align:right;}
+.mom-mon{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:11px;}
+.mom-sold{font-size:30px;font-weight:600;font-family:var(--mono);line-height:1;letter-spacing:-0.01em;color:var(--ink);}
+.mom-sold .u{font-size:12px;color:var(--faint);font-weight:400;margin-left:6px;letter-spacing:0;}
+.mom-delta{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:0 22px;border-left:1px solid var(--line-2);border-right:1px solid var(--line-2);}
+.mom-arrow{font-size:13px;line-height:1;color:var(--muted);}
+.mom-pct{font-size:23px;font-weight:600;font-family:var(--mono);letter-spacing:-0.01em;}
+.mom-sub{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+
+.footnote{margin-top:26px;padding-top:16px;border-top:1px solid var(--line-2);font-size:11px;color:var(--faint);font-family:var(--mono);line-height:1.7;}
+
+@media(max-width:920px){
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .prod-row{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:760px){
+  .layout{grid-template-columns:1fr;gap:16px;}
+  .sidebar{position:static;}
+  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding:8px;}
+  .nav-sec{display:none;}
+  .nav-item{flex-direction:column;align-items:flex-start;gap:4px;white-space:nowrap;}
+}
+@media(max-width:600px){
+  .kpi-row,.prod-row{grid-template-columns:1fr;}
+  .stat-row{grid-template-columns:1fr 1fr;}
+  .mrow{gap:7px;padding:11px 13px;}
+  .mc-cell,.mc-month{font-size:12px;}
+  .mom-grid{grid-template-columns:1fr;}
+  .mom-col.r{text-align:left;}
+  .mom-delta{flex-direction:row;justify-content:center;gap:10px;padding:12px;border-left:none;border-right:none;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Mera Cannabis">
+    <span class="brand-div"></span>
+    <h1>S&amp;OP Sales Analysis Dashboard</h1>
+  </div>
+  <div class="period">
+    <div class="period-meta">
+      <div class="k">Reporting period</div>
+      <div class="v" id="periodLabel">—</div>
+    </div>
+    <div class="pill-group" id="yrGroup">
+      <button class="pill" data-yr="2025">2025</button>
+      <button class="pill active" data-yr="2026">2026</button>
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar"><nav class="nav" id="nav"></nav></aside>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="footnote" id="footnote"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const THEME_KEY='fva-theme';
+(function(){try{const t=localStorage.getItem(THEME_KEY);if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TYPES=[
+  {key:'Pre-Rolls', tok:'--pre'},
+  {key:'Infused PR',tok:'--ipr'},
+  {key:'Vapes',     tok:'--vape'},
+  {key:'Extracts',  tok:'--ext'},
+];
+// status per year/month: complete | partial | future
+const STATUS={
+  2026:{Jan:'c',Feb:'c',Mar:'c',Apr:'c',May:'c',Jun:'p',Jul:'f',Aug:'f',Sep:'f',Oct:'f',Nov:'f',Dec:'f'},
+  2025:{Jan:'c',Feb:'c',Mar:'c',Apr:'c',May:'c',Jun:'c',Jul:'c',Aug:'c',Sep:'c',Oct:'c',Nov:'c',Dec:'c'}
+};
+// Real totals summed from source workbook (per product, per month). {f:forecast, s:sold}
+const DATA={
+  2026:{
+    'Pre-Rolls':{Jan:{f:115463,s:72672},Feb:{f:118763,s:86052},Mar:{f:125483,s:55032},Apr:{f:88420,s:89316},May:{f:91218,s:64020},Jun:{f:94837,s:1200},Jul:{f:99696,s:0},Aug:{f:104694,s:0},Sep:{f:106748,s:0},Oct:{f:109174,s:0},Nov:{f:112297,s:0},Dec:{f:115308,s:0}},
+    'Infused PR':{Jan:{f:39301,s:20352},Feb:{f:38149,s:29484},Mar:{f:41113,s:17796},Apr:{f:22466,s:24936},May:{f:23138,s:10056},Jun:{f:23982,s:852},Jul:{f:24113,s:0},Aug:{f:25064,s:0},Sep:{f:26213,s:0},Oct:{f:27461,s:0},Nov:{f:28606,s:0},Dec:{f:29765,s:0}},
+    'Vapes':{Jan:{f:37444,s:36478},Feb:{f:37324,s:60692},Mar:{f:38464,s:11197},Apr:{f:33333,s:14906},May:{f:38126,s:11916},Jun:{f:38680,s:720},Jul:{f:38739,s:0},Aug:{f:39553,s:0},Sep:{f:41983,s:0},Oct:{f:46018,s:0},Nov:{f:48957,s:0},Dec:{f:51139,s:0}},
+    'Extracts':{Jan:{f:11344,s:10116},Feb:{f:10354,s:14178},Mar:{f:10894,s:8512},Apr:{f:9634,s:7010},May:{f:9977,s:4976},Jun:{f:10362,s:252},Jul:{f:10818,s:0},Aug:{f:11245,s:0},Sep:{f:11810,s:0},Oct:{f:12261,s:0},Nov:{f:12868,s:0},Dec:{f:13372,s:0}}
+  },
+  2025:{
+    'Pre-Rolls':{Jan:{f:108357,s:61619},Feb:{f:102345,s:64836},Mar:{f:0,s:47091},Apr:{f:0,s:184608},May:{f:0,s:86388},Jun:{f:0,s:204036},Jul:{f:0,s:78588},Aug:{f:0,s:184668},Sep:{f:0,s:299400},Oct:{f:166701,s:334656},Nov:{f:0,s:50136},Dec:{f:0,s:63012}},
+    'Infused PR':{Jan:{f:91682,s:72835},Feb:{f:86852,s:61164},Mar:{f:0,s:40742},Apr:{f:0,s:122760},May:{f:0,s:35591},Jun:{f:0,s:48528},Jul:{f:0,s:38913},Aug:{f:0,s:35232},Sep:{f:37104,s:35923},Oct:{f:43842,s:46093},Nov:{f:43923,s:19300},Dec:{f:50477,s:22036}},
+    'Vapes':{Jan:{f:88024,s:173728},Feb:{f:84588,s:157348},Mar:{f:0,s:48220},Apr:{f:0,s:49930},May:{f:0,s:61501},Jun:{f:0,s:41962},Jul:{f:0,s:45131},Aug:{f:0,s:51707},Sep:{f:36492,s:36592},Oct:{f:37226,s:37084},Nov:{f:37968,s:25301},Dec:{f:0,s:31278}},
+    'Extracts':{Jan:{f:20648,s:20812},Feb:{f:20958,s:19938},Mar:{f:0,s:17016},Apr:{f:0,s:12695},May:{f:0,s:11358},Jun:{f:0,s:14260},Jul:{f:0,s:16224},Aug:{f:0,s:7174},Sep:{f:0,s:8530},Oct:{f:0,s:11008},Nov:{f:0,s:7250},Dec:{f:0,s:9408}}
+  }
+};
+const FCAST_FLOOR=1000; // below this a "forecast" cell is a broken formula, not a real plan
+
+const charts=[];
+function fmtN(v){if(v==null)return'—';return Math.round(v).toLocaleString();}
+function fmtK(v){if(v==null)return'—';const a=Math.abs(v);if(a>=1e6)return(v/1e6).toFixed(2)+'M';if(a>=1000)return(v/1000).toFixed(1)+'k';return Math.round(v).toString();}
+function hexA(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;}
+function signPct(v){if(v==null)return'—';return(v>=0?'+':'')+Math.round(v)+'%';}
+function hasF(yr,key,mon){return (DATA[yr]?.[key]?.[mon]?.f||0)>=FCAST_FLOOR;}
+function completeMonths(yr){return MONTHS.filter(m=>STATUS[yr][m]==='c');}
+
+/* ---------- executive summary ---------- */
+function computeSummary(yr){
+  const months=completeMonths(yr);
+  const per=TYPES.map(t=>{
+    let f=0,s=0,hasAnyF=false;
+    months.forEach(m=>{const d=DATA[yr][t.key][m];if(d){if(hasF(yr,t.key,m)){f+=d.f;hasAnyF=true;}s+=d.s;}});
+    return {...t,f,s,att:hasAnyF&&f>0?s/f:null,hasF:hasAnyF};
+  });
+  let totF=0,totS=0;
+  per.forEach(p=>{totF+=p.f;totS+=p.s;});
+  // full-year forecast (all 12 months where forecast is valid)
+  let fyF=0;
+  TYPES.forEach(t=>MONTHS.forEach(m=>{if(hasF(yr,t.key,m))fyF+=DATA[yr][t.key][m].f;}));
+  return {months,per,totF,totS,att:totF>0?totS/totF:null,fyF};
+}
+function attClass(att){if(att==null)return'';return att>=1?'over':att>=0.9?'near':'under';}
+function attColor(att){if(att==null)return'var(--muted)';return att>=1?'var(--teal)':att>=0.9?'var(--amber)':'var(--coral)';}
+
+const tickF={size:10,family:"'DM Mono',monospace"};
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function catColor(key){const t=TYPES.find(x=>x.key===key);return cssVar(t?t.tok:'--accent')||'#888';}
+let gridC,tickC,axisC,tipBase;
+function refreshChartTokens(){
+  gridC=cssVar('--chart-grid');
+  tickC=cssVar('--chart-tick');
+  axisC=cssVar('--chart-axis');
+  tipBase={backgroundColor:cssVar('--chart-tip-bg'),titleColor:cssVar('--ink-2'),bodyColor:cssVar('--ink'),borderColor:cssVar('--chart-tip-border'),borderWidth:1,padding:10,cornerRadius:8};
+}
+refreshChartTokens();
+function makeChart(cid,labels,vals,bg,bd){
+  return new Chart(document.getElementById(cid),{
+    type:'bar',
+    data:{labels,datasets:[{data:vals,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:5,borderSkipped:false,maxBarThickness:64}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...tipBase,callbacks:{title:c=>c[0].label,label:c=>` ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} units`}}},
+      scales:{x:{ticks:{font:tickF,color:tickC},grid:{display:false},border:{color:axisC}},
+              y:{beginAtZero:true,ticks:{callback:v=>fmtK(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
+  });
+}
+function makeSpark(s){
+  const n=s.vals.length;
+  const ptR=s.vals.map((v,i)=>i===n-1?3.5:0);
+  const ptC=s.vals.map((v,i)=>i===n-1?s.color:'transparent');
+  return new Chart(document.getElementById(s.cid),{
+    type:'line',
+    data:{labels:s.labels,datasets:[{data:s.vals,borderColor:s.color,borderWidth:2,tension:.35,fill:true,backgroundColor:hexA(s.color,.09),pointRadius:ptR,pointHoverRadius:4,pointBackgroundColor:ptC,pointBorderColor:ptC}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:6,bottom:2}},
+      plugins:{legend:{display:false},tooltip:{...tipBase,callbacks:{title:c=>c[0].label,label:c=>` ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} units`}}},
+      scales:{x:{ticks:{font:{size:8,family:"'DM Mono',monospace"},color:tickC},grid:{display:false},border:{color:axisC}},
+              y:{display:true,beginAtZero:true,ticks:{callback:v=>fmtK(v),font:{size:8,family:"'DM Mono',monospace"},color:tickC,maxTicksLimit:4},grid:{color:gridC},border:{display:false}}}}
+  });
+}
+function makeGroup(s){
+  return new Chart(document.getElementById(s.cid),{
+    type:'bar',
+    data:{labels:s.labels,datasets:[
+      {label:'Forecast',data:s.fvals,backgroundColor:hexA(s.color,.22),borderColor:hexA(s.color,.55),borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:34},
+      {label:'Sold',    data:s.svals,backgroundColor:hexA(s.color,.85),borderColor:s.color,borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:34}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...tipBase,callbacks:{label:c=>` ${c.dataset.label}: ${c.raw==null?'—':Math.round(c.raw).toLocaleString()}`}}},
+      scales:{x:{ticks:{font:tickF,color:tickC},grid:{display:false},border:{color:axisC}},
+              y:{beginAtZero:true,ticks:{callback:v=>fmtK(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
+  });
+}
+function navMonths(yr){return MONTHS.filter(m=>STATUS[yr][m]==='c'||STATUS[yr][m]==='p');}
+
+/* ---------- overview page ---------- */
+function buildOverview(yr){
+  const S=computeSummary(yr);
+  const lm=S.months[S.months.length-1];
+  const pm=S.months.length>1?S.months[S.months.length-2]:null;
+  let mF=0,mS=0,mHasF=false,pS=0;
+  TYPES.forEach(t=>{
+    const d=DATA[yr][t.key][lm];
+    if(d){mS+=d.s;if(hasF(yr,t.key,lm)){mF+=d.f;mHasF=true;}}
+    if(pm){const p=DATA[yr][t.key][pm];if(p)pS+=p.s;}
+  });
+  const mAtt=mHasF&&mF>0?mS/mF:null;
+  const mMom=pS>0?(mS-pS)/pS*100:null;
+  const attPct=mAtt!=null?Math.round(mAtt*100):null;
+  const variance=mAtt!=null?(mAtt-1)*100:null;
+  const gap=mF-mS;
+  const ringCol=attColor(mAtt);
+  const kpi=`
+    <div class="kpi-row">
+      <div class="kpi lead">
+        <div class="lab">Forecast attainment · ${lm}</div>
+        <div class="big" style="color:${ringCol}">${attPct!=null?attPct:'—'}<span class="unit">%</span></div>
+        <div class="att-meter"><div class="fill" style="width:${Math.min(attPct||0,100)}%;background:${ringCol}"></div><div class="plan" style="left:100%"></div></div>
+        <div class="sub">${variance!=null?(variance>=0?'<span class="pos">':'<span class="neg">')+signPct(variance)+'</span> vs plan · '+fmtK(Math.abs(gap))+' unit '+(gap>=0?'shortfall':'surplus'):''}</div>
+      </div>
+      <div class="kpi"><div class="lab">Units sold · ${lm}</div><div class="big teal" style="color:var(--teal)">${fmtK(mS)}</div><div class="sub">actual sell-through</div></div>
+      <div class="kpi"><div class="lab">Units forecast · ${lm}</div><div class="big" style="color:var(--lav)">${mHasF?fmtK(mF):'—'}</div><div class="sub">${mHasF?'planned for '+lm:'no plan on file'}</div></div>
+      <div class="kpi"><div class="lab">MoM change</div><div class="big" style="color:${mMom==null?'var(--ink)':mMom>=0?'var(--teal)':'var(--coral)'}">${mMom!=null?signPct(mMom):'—'}</div><div class="sub">vs ${pm||'—'} sold</div></div>
+    </div>`;
+  const specs=[];
+  const momCards=TYPES.map(t=>{
+    const series=S.months.map(m=>DATA[yr][t.key][m]?.s||0);
+    const n=series.length;
+    const latest=series[n-1]||0, prev=n>1?series[n-2]:null;
+    const mom=prev!=null&&prev>0?(latest-prev)/prev*100:null;
+    const lastMon=S.months[n-1], prevMon=n>1?S.months[n-2]:null;
+    const cls=mom==null?'nu':mom>=0?'over':'under';
+    const cid=`ov-${yr}-${t.key.replace(/[^a-z]/gi,'')}`;
+    const cc=catColor(t.key);
+    specs.push({cid,kind:'spark',labels:S.months.slice(),vals:series,color:cc});
+    return `<div class="prod">
+      <div class="prod-top"><div class="prod-name"><span class="dot" style="background:${cc}"></span>${t.key}</div><span class="chip ${cls}">${mom!=null?signPct(mom)+' MoM':'—'}</span></div>
+      <div class="mom-spark"><canvas id="${cid}" role="img" aria-label="${t.key} monthly sold trend"></canvas></div>
+      <div class="prod-nums"><div class="col"><div class="k">${lastMon||'—'} sold</div><div class="vv">${fmtN(latest)}</div></div><div class="col"><div class="k">vs ${prevMon||'—'}</div><div class="vv" style="color:${mom==null?'var(--muted)':mom>=0?'var(--teal-bright)':'var(--coral)'}">${mom!=null?signPct(mom):'—'}</div></div></div>
+    </div>`;
+  }).join('');
+  const prod=`<div class="eyebrow">Month-over-month · units sold by category</div><div class="prod-row">${momCards}</div>`;
+  const partial=MONTHS.find(m=>STATUS[yr][m]==='p');
+  let ip='';
+  if(partial){let ps=0,pf=0;TYPES.forEach(t=>{const d=DATA[yr][t.key][partial];if(d){ps+=d.s;if(hasF(yr,t.key,partial))pf+=d.f;}});ip=`<div class="inprog"><span class="tag">In progress</span><div><b>${partial} ${yr}</b> is mid-month — <b>${fmtN(ps)}</b> units sold so far against a <b>${fmtN(pf)}</b> forecast. Excluded from YTD attainment until the month closes.</div></div>`;}
+  const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3.5-4 3 2.5L21 7"/></svg>`;
+  return {html:`<div class="page-head"><div class="page-title">${icon}Executive summary</div><div class="page-kicker">Latest close · ${lm} ${yr}</div></div>${kpi}${prod}${ip}`, specs};
+}
+
+/* ---------- single category page ---------- */
+function buildCategory(yr,catKey){
+  const t=TYPES.find(x=>x.key===catKey)||TYPES[0];
+  const color=catColor(catKey);
+  const nav=navMonths(yr);
+  const cm=completeMonths(yr);
+  const showYoY=yr==2026;
+
+  let totF=0,totS=0,hasAnyF=false;
+  cm.forEach(m=>{const d=DATA[yr][catKey][m];if(d){totS+=d.s;if(hasF(yr,catKey,m)){totF+=d.f;hasAnyF=true;}}});
+  const att=hasAnyF&&totF>0?totS/totF:null;
+  const acc=att!=null?(att-1)*100:null;
+  let fyF=0;MONTHS.forEach(m=>{if(hasF(yr,catKey,m))fyF+=DATA[yr][catKey][m].f;});
+  const fyPct=fyF>0?Math.round(totS/fyF*100):null;
+
+  const labels=nav.slice();
+  const fvals=nav.map(m=>hasF(yr,catKey,m)?DATA[yr][catKey][m].f:null);
+  const svals=nav.map(m=>DATA[yr][catKey][m]?.s||0);
+  const cid=`cat-${yr}-${catKey.replace(/[^a-z]/gi,'')}`;
+  const specs=[{cid,kind:'group',labels,fvals,svals,color}];
+
+  const statRow=`
+    <div class="stat-row">
+      <div class="stat"><div class="k">Total sold · YTD</div><div class="v teal">${fmtK(totS)}</div><div class="s">${cm.length} mo actual</div></div>
+      <div class="stat"><div class="k">Total forecast</div><div class="v lav">${hasAnyF?fmtK(totF):'—'}</div><div class="s">${hasAnyF?'units planned':'no plan on file'}</div></div>
+      <div class="stat"><div class="k">vs forecast</div><div class="v" style="color:${acc!=null&&acc<0?'var(--coral)':'var(--teal)'}">${acc!=null?signPct(acc):'—'}</div><div class="s">${att!=null?Math.round(att*100)+'% attained':'no plan'}</div></div>
+      <div class="stat"><div class="k">vs full-year plan</div><div class="v amber">${fyPct!=null?fyPct+'%':'—'}</div><div class="s">of ${fmtK(fyF)} annual</div></div>
+    </div>`;
+
+  const gcol=showYoY?'1.1fr .9fr .9fr .8fr .8fr .8fr':'1.1fr .9fr .9fr .8fr .8fr';
+  const headRow=`<div class="mrow head" style="grid-template-columns:${gcol}"><div>Month</div><div>Sold</div><div>Forecast</div><div>vs fcst</div><div>MoM</div>${showYoY?'<div>YoY ’25</div>':''}</div>`;
+  const rows=nav.map((m,i)=>{
+    const d=DATA[yr][catKey][m]||{f:0,s:0};
+    const tHasF=hasF(yr,catKey,m);
+    const tAtt=tHasF&&d.f>0?d.s/d.f:null;
+    const tAcc=tAtt!=null?(tAtt-1)*100:null;
+    const prevM=i>0?nav[i-1]:null;
+    const prevS=prevM?(DATA[yr][catKey][prevM]?.s||0):null;
+    const tMom=prevS!=null&&prevS>0?(d.s-prevS)/prevS*100:null;
+    const t25=showYoY?(DATA[2025]?.[catKey]?.[m]?.s??null):null;
+    const tYoY=t25!=null&&t25>0?(d.s-t25)/t25*100:null;
+    const partial=STATUS[yr][m]==='p';
+    return `<div class="mrow" style="grid-template-columns:${gcol}">
+      <div class="mc-month"><span class="dot" style="background:${color}"></span>${m}${partial?'<span class="ni-tag">Live</span>':''}</div>
+      <div class="mc-cell teal">${fmtN(d.s)}</div>
+      <div class="mc-cell lav">${tHasF?fmtN(d.f):'—'}</div>
+      <div class="mc-cell ${tAcc==null?'muted':tAcc>=0?'pos':'neg'}">${tAcc!=null?signPct(tAcc):'—'}</div>
+      <div class="mc-cell ${tMom==null?'muted':tMom>=0?'pos':'neg'}">${tMom!=null?signPct(tMom):'—'}</div>
+      ${showYoY?`<div class="mc-cell" style="color:${tYoY==null?'var(--faint)':tYoY>=0?'var(--amber)':'var(--coral)'}">${tYoY!=null?signPct(tYoY):'—'}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const accBadge=acc==null?'<span class="tb tb-nu">vs fcst: —</span>':acc>=0?`<span class="tb tb-up">vs fcst: ${signPct(acc)}</span>`:`<span class="tb tb-dn">vs fcst: ${signPct(acc)}</span>`;
+  const legend=`<div class="legend">
+    <div class="leg"><div class="leg-sq" style="background:${hexA(color,.85)}"></div>Sold</div>
+    <div class="leg"><div class="leg-sq" style="background:${hexA(color,.28)}"></div>Forecast</div>
+  </div>`;
+  const partialMon=nav.find(m=>STATUS[yr][m]==='p');
+  const note=partialMon?`<div class="inprog" style="margin-bottom:16px"><span class="tag">In progress</span><div><b>${partialMon} ${yr}</b> is mid-month — its row is partial and excluded from the YTD totals above.</div></div>`:'';
+
+  let momPanel='';
+  const lm=cm[cm.length-1], pm=cm.length>1?cm[cm.length-2]:null;
+  if(pm){
+    const a=DATA[yr][catKey][pm]||{f:0,s:0}, b=DATA[yr][catKey][lm]||{f:0,s:0};
+    const soldD=b.s-a.s, soldPct=a.s>0?soldD/a.s*100:null;
+    const dir=soldPct==null?'':soldPct>=0?'pos':'neg';
+    const arrow=soldPct==null?'·':soldPct>=0?'▲':'▼';
+    const momCid=`mom-${yr}-${catKey.replace(/[^a-z]/gi,'')}`;
+    specs.push({cid:momCid,labels:[pm,lm],vals:[a.s,b.s],bg:hexA(color,.85),bd:color});
+    momPanel=`<div class="month-card mom-analysis">
+      <div class="mc-head">
+        <div class="mc-name"><span class="dot" style="background:${color}"></span>Month-over-month analysis</div>
+        <div class="badges"><span class="tb tb-vol">${pm} → ${lm} ${yr}</span></div>
+      </div>
+      <div class="mom-grid">
+        <div class="mom-col">
+          <div class="mom-mon">${pm} ${yr}</div>
+          <div class="mom-sold">${fmtN(a.s)}<span class="u">sold</span></div>
+        </div>
+        <div class="mom-delta">
+          <div class="mom-arrow ${dir}">${arrow}</div>
+          <div class="mom-pct ${dir}">${soldPct!=null?signPct(soldPct):'—'}</div>
+          <div class="mom-sub">units sold</div>
+        </div>
+        <div class="mom-col r">
+          <div class="mom-mon">${lm} ${yr}</div>
+          <div class="mom-sold">${fmtN(b.s)}<span class="u">sold</span></div>
+        </div>
+      </div>
+      <div class="cat-sec">
+        <div class="cat-chart-wide" style="height:190px"><canvas id="${momCid}" role="img" aria-label="${catKey} units sold ${pm} versus ${lm}"></canvas></div>
+      </div>
+    </div>`;
+  }
+
+  const html=`<div class="page-head"><div class="page-title"><span class="dot" style="background:${color};width:12px;height:12px"></span>${catKey}</div><div class="page-kicker">${cm.length} mo YTD · ${yr}</div></div>
+    ${momPanel}${legend}${note}
+    <div class="month-card">
+      <div class="mc-head">
+        <div class="mc-name"><span class="dot" style="background:${color}"></span>Monthly breakdown</div>
+        <div class="badges"><span class="tb tb-vol">Sold: ${fmtN(totS)}</span>${accBadge}</div>
+      </div>
+      ${statRow}
+      <div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="${cid}" role="img" aria-label="${catKey} forecast vs sold by month ${yr}"></canvas></div></div>
+      <div class="mtable">${headRow}${rows}</div>
+    </div>`;
+  return {html,specs};
+}
+
+/* ---------- sidebar nav ---------- */
+function renderNav(yr,active){
+  const cm=completeMonths(yr);
+  let html=`<div class="nav-sec first">Overview</div>`;
+  html+=`<button class="nav-item${active==='overview'?' active':''}" data-page="overview"><span class="ni-name">Executive summary</span><span class="ni-val">YTD</span></button>`;
+  html+=`<div class="nav-sec">Categories · ${yr}</div>`;
+  TYPES.forEach(t=>{
+    let s=0,f=0,hasAnyF=false;
+    cm.forEach(m=>{const d=DATA[yr][t.key][m];if(d){s+=d.s;if(hasF(yr,t.key,m)){f+=d.f;hasAnyF=true;}}});
+    const att=hasAnyF&&f>0?s/f:null;
+    const right=att!=null?`<span class="ni-val" style="color:${attColor(att)}">${Math.round(att*100)}%</span>`:`<span class="ni-val">${fmtK(s)}</span>`;
+    html+=`<button class="nav-item${active===t.key?' active':''}" data-page="${t.key}"><span class="ni-name"><span class="dot" style="background:${catColor(t.key)}"></span>${t.key}</span>${right}</button>`;
+  });
+  document.getElementById('nav').innerHTML=html;
+}
+
+function showPage(yr,page){
+  charts.forEach(c=>c.destroy());charts.length=0;
+  refreshChartTokens();
+  const main=document.getElementById('main');
+  const r= page==='overview'?buildOverview(yr):buildCategory(yr,page);
+  main.innerHTML=r.html;
+  (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
+  document.querySelectorAll('#nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  curPage=page;
+  window.scrollTo(0,0);
+}
+
+function render(yr){
+  curYr=yr;
+  const months=completeMonths(yr);
+  const first=months[0],last=months[months.length-1];
+  document.getElementById('periodLabel').textContent=months.length?`${first}–${last} ${yr}`:`${yr}`;
+  document.getElementById('footnote').innerHTML=
+    `Source: 2025-01-02 Forecast-vs-Actual workbook · totals summed from SKU-level forecast &amp; sold columns per product sheet. `+
+    `Forecast cells below ${FCAST_FLOOR.toLocaleString()} units are treated as missing (broken source formulas) and shown as “—”. `+
+    (yr==2026?`June 2026 is mid-month and excluded from YTD attainment.`:`2025 forecast coverage is partial; months without a plan show actuals only.`);
+  let page=curPage;
+  if(page!=='overview' && !TYPES.some(t=>t.key===page)) page='overview';
+  renderNav(yr,page);
+  showPage(yr,page);
+}
+
+let curYr='2026',curPage='overview';
+document.getElementById('yrGroup').addEventListener('click',e=>{
+  const yr=e.target.dataset.yr;if(!yr)return;
+  document.querySelectorAll('#yrGroup .pill').forEach(p=>p.classList.toggle('active',p.dataset.yr===yr));
+  render(yr);
+});
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('.nav-item');if(!b)return;
+  showPage(curYr,b.dataset.page);
+});
+
+const SUN_SVG='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOON_SVG='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+const themeBtn=document.getElementById('themeToggle');
+function curTheme(){return document.documentElement.getAttribute('data-theme')||'dark';}
+function paintThemeIcon(){themeBtn.innerHTML=curTheme()==='light'?MOON_SVG:SUN_SVG;}
+paintThemeIcon();
+themeBtn.addEventListener('click',()=>{
+  const next=curTheme()==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem(THEME_KEY,next);}catch(e){}
+  paintThemeIcon();
+  render(curYr);
+});
+
+render('2026');
+</script>
+</body>
+</html>
