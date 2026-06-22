@@ -46,17 +46,18 @@
   --mono:'DM Mono',ui-monospace,Menlo,monospace;
 }
 :root[data-theme="light"]{
-  --bg:#e9edf2;
-  --panel:#f8fafc;
-  --panel-2:#eef2f7;
-  --inset:#e2e8f0;
-  --ink:#1e293b;
-  --ink-2:#475569;
-  --muted:#64748b;
-  --faint:#94a3b8;
-  --line:#d6dde6;
-  --line-2:#e2e8f0;
-  --ctrl-bg:#ffffff; --ctrl-bg-h:#eaf1fb;
+  /* Dimmed "soft daylight" — surfaces pulled well below pure white to cut glare */
+  --bg:#c7ccd4;
+  --panel:#dce1e8;
+  --panel-2:#d2d8e0;
+  --inset:#c3cad3;
+  --ink:#222b3a;
+  --ink-2:#465162;
+  --muted:#5d6776;
+  --faint:#8992a0;
+  --line:#b5bec9;
+  --line-2:#c9d1db;
+  --ctrl-bg:#e5eaf0; --ctrl-bg-h:#d6dfec;
   --teal:#1a7a4a;
   --teal-bright:#15824f;
   --lav:#7c3aed;
@@ -68,18 +69,18 @@
   --vape:#b87000;
   --ext:#638f1c;
   --flower:#b83280;
-  --accent-soft:#f3e4da;
-  --mark-grad:linear-gradient(150deg,#f3e4da,#efd6c6);
-  --kpi-u-bg:#fbede4; --kpi-u-bd:#f1d6c4;
-  --kpi-r-bg:#e6f1ea; --kpi-r-bd:#c8e0d2;
-  --kpi-c-bg:#ece9f7; --kpi-c-bd:#d6cdee;
-  --chart-grid:rgba(15,23,42,.06);
-  --chart-tick:#64748b;
-  --chart-axis:#cbd5e1;
-  --chart-tip-bg:#f8fafc;
-  --chart-tip-border:#cbd5e1;
-  --card-elev:inset 0 1px 0 rgba(255,255,255,.8),0 6px 18px rgba(15,23,42,.07);
-  --card-elev-h:inset 0 1px 0 rgba(255,255,255,.95),0 14px 30px rgba(15,23,42,.13);
+  --accent-soft:#e3d3c8;
+  --mark-grad:linear-gradient(150deg,#e3d3c8,#dbc6b7);
+  --kpi-u-bg:#e5dad0; --kpi-u-bd:#d1bbaa;
+  --kpi-r-bg:#d2e0d7; --kpi-r-bd:#b8d0c2;
+  --kpi-c-bg:#d8d3ea; --kpi-c-bd:#c4bade;
+  --chart-grid:rgba(15,23,42,.07);
+  --chart-tick:#5b6675;
+  --chart-axis:#b4bdc8;
+  --chart-tip-bg:#dce1e8;
+  --chart-tip-border:#b4bdc8;
+  --card-elev:inset 0 1px 0 rgba(255,255,255,.5),0 6px 18px rgba(15,23,42,.09);
+  --card-elev-h:inset 0 1px 0 rgba(255,255,255,.62),0 14px 30px rgba(15,23,42,.15);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;transition:background .2s ease,color .2s ease;}
@@ -279,10 +280,58 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .mc-month .ni-tag{margin-left:2px;}
 .mc-cell{font-size:14px;font-family:var(--mono);font-weight:500;text-align:right;}
 .mc-cell.teal{color:var(--teal);} .mc-cell.lav{color:var(--lav);}
+.mc-dual{display:flex;flex-direction:column;align-items:flex-end;gap:2px;line-height:1.15;white-space:nowrap;}
+.mc-dual .mc-sub{font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:0.01em;white-space:nowrap;}
+.mtable-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.mtable-scroll .mtable{min-width:920px;}
 .skf-d{display:flex;flex-direction:column;gap:1px;min-width:0;line-height:1.22;}
 .skf-d small{font-size:10px;color:var(--faint);font-family:var(--mono);font-weight:400;letter-spacing:0.02em;}
 .skf-tot{border-top:1.5px solid var(--line);}
 .skf-tot .mc-month{color:var(--muted);font-weight:600;}
+/* day-by-day production schedule */
+.sched-day{margin-top:18px;}
+.sched-day:first-of-type{margin-top:0;}
+.sd-head{display:flex;align-items:baseline;gap:11px;padding:0 4px 9px;}
+.sd-date{font-size:15px;font-weight:600;color:var(--ink);}
+.sd-dow{font-family:var(--mono);font-size:10.5px;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;}
+.sd-cnt{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto;}
+.sched-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.stable{min-width:1040px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--card-elev);}
+.srow{display:grid;grid-template-columns:58px minmax(168px,1.6fr) minmax(116px,1.12fr) 86px minmax(108px,1fr) 96px 42px 96px;gap:13px;padding:11px 16px;border-top:1px solid var(--line-2);align-items:start;}
+.srow:first-child{border-top:none;}
+.srow.head{background:var(--panel-2);padding:9px 16px;}
+.srow.head>div{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+.srow.head>div.r{text-align:right;}
+.s-sku{font-family:var(--mono);font-size:12px;color:var(--ink-2);font-weight:500;}
+.s-desc{font-size:12.5px;color:var(--ink);line-height:1.32;}
+.s-lot{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.38;word-break:break-word;}
+.s-out{font-family:var(--mono);font-size:11px;color:var(--teal);line-height:1.38;word-break:break-word;}
+.s-qty{font-family:var(--mono);font-size:12px;color:var(--ink-2);text-align:right;line-height:1.38;word-break:break-word;}
+.s-prov{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;}
+.s-st{font-size:8.5px;font-family:var(--mono);padding:3px 7px;border-radius:5px;letter-spacing:0.03em;white-space:nowrap;justify-self:start;text-transform:uppercase;}
+.st-prog{background:rgba(61,220,138,.16);color:var(--teal-bright);}
+.st-firm{background:rgba(255,122,61,.16);color:var(--accent);}
+.st-staged{background:rgba(167,139,250,.16);color:var(--lav);}
+.st-board{background:rgba(135,142,160,.14);color:var(--muted);}
+.st-planned{background:rgba(135,142,160,.08);color:var(--faint);}
+/* batch / lot process-stage schedules (Sparling) */
+.stream-head{display:flex;align-items:center;gap:10px;margin:28px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+.stream-head:first-of-type{margin-top:2px;}
+.stream-title{font-size:17px;font-weight:600;display:flex;align-items:center;gap:9px;}
+.stream-sub{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-left:auto;}
+.b-code{font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-left:9px;letter-spacing:0.01em;}
+.ptable{background:transparent;}
+.prow{display:grid;gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);align-items:center;}
+.prow:first-child{border-top:none;}
+.prow.head{background:var(--panel-2);padding:8px 18px;}
+.prow.head>div{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+.prow.head>div.r{text-align:right;}
+.p-stage{font-size:12.5px;color:var(--ink);line-height:1.3;}
+.p-date{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap;}
+.p-kg{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);text-align:right;white-space:nowrap;}
+.p-kg.teal{color:var(--teal);}
+.spar-toggle{max-width:380px;margin-bottom:20px;}
+.spar-pane.hidden{display:none;}
 
 /* ---------- month-over-month panel ---------- */
 .mom-analysis{margin-bottom:16px;}
@@ -707,9 +756,9 @@ function makeFlower(s){
     type:'bar',
     data:{labels:s.labels,datasets:s.series.map(ds=>({label:ds.label,data:ds.data,backgroundColor:hexA(ds.color,.82),borderColor:ds.color,borderWidth:1,borderRadius:3,borderSkipped:false,maxBarThickness:54,stack:'q'}))},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...tipBase,callbacks:{title:c=>c[0].label,label:c=>` ${c.dataset.label}: ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} g`,footer:its=>'Total: '+Math.round(its.reduce((a,i)=>a+(i.raw||0),0)).toLocaleString()+' g'}}},
+      plugins:{legend:{display:false},tooltip:{...tipBase,callbacks:{title:c=>c[0].label,label:c=>` ${c.dataset.label}: ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} kg`,footer:its=>'Total: '+Math.round(its.reduce((a,i)=>a+(i.raw||0),0)).toLocaleString()+' kg'}}},
       scales:{x:{stacked:true,ticks:{font:tickF,color:tickC},grid:{display:false},border:{color:axisC}},
-              y:{stacked:true,beginAtZero:true,ticks:{callback:v=>fmtK(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
+              y:{stacked:true,beginAtZero:true,ticks:{callback:v=>fmtN(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
   });
 }
 function makeMomBuckets(s){
@@ -854,6 +903,12 @@ const OPS_SECTIONS=[
 const PLANNING_SECTIONS=[
   {key:'flower',name:'Flower Procurement Schedule'},
 ];
+const PROD_SITES=[
+  {key:'countryside',name:'Countryside'},
+  {key:'greenleaf',name:'Greenleaf'},
+  {key:'harwill',name:'Harwill'},
+  {key:'sparling',name:'Sparling'},
+];
 const isOpsPage=p=>p==='operations'||(typeof p==='string'&&p.slice(0,4)==='ops:');
 const isPlanningPage=p=>p==='planning'||(typeof p==='string'&&p.slice(0,9)==='planning:');
 const pageMode=p=>isPlanningPage(p)?'planning':isOpsPage(p)?'operations':'sales';
@@ -873,11 +928,11 @@ const FLOWER_SCHED={
   yr:'2026', updated:'2026-06-21',
   months:['Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   rows:[
-    {n:'Pre-Roll · Indica',          t:'31%+ THC',   ppg:0.75, c:'--pre',    q:[400000,265000,280000,140000,140000,280000,140000]},
-    {n:'Pre-Roll · Sativa',          t:'31%+ THC',   ppg:0.75, c:'--lav',    q:[400000,285000,320000,160000,160000,320000,160000]},
-    {n:'Infused Pre-Roll · LP',      t:'26–29% THC', ppg:0.75, c:'--ipr',    q:[0,0,0,16000,16000,32000,16000]},
-    {n:'Infused Pre-Roll · HP',      t:'26–29% THC', ppg:0.75, c:'--teal',   q:[0,0,0,7000,7000,14000,7000]},
-    {n:'Extraction · GMP Distillate',t:'20% THC',    ppg:0.6,  c:'--accent', q:[0,0,0,400000,200000,400000,200000]},
+    {n:'Pre-Roll · Indica',          t:'31%+ THC',   ppg:0.75, c:'--pre',    q:[400000,265000,280000,140000,140000,140000,140000]},
+    {n:'Pre-Roll · Sativa',          t:'31%+ THC',   ppg:0.75, c:'--lav',    q:[400000,285000,320000,160000,160000,160000,160000]},
+    {n:'Infused Pre-Roll · LP',      t:'26–29% THC', ppg:0.75, c:'--ipr',    q:[0,0,0,16000,16000,16000,16000]},
+    {n:'Infused Pre-Roll · HP',      t:'26–29% THC', ppg:0.75, c:'--teal',   q:[0,0,0,7000,7000,7000,7000]},
+    {n:'Extraction · GMP Distillate',t:'20% THC',    ppg:0.6,  c:'--accent', q:[0,0,0,400000,200000,200000,200000]},
     {n:'Extraction · Hydrocarbon',   t:'pricing TBD',ppg:0.18, c:'--faint', tbd:true, q:[null,null,null,null,null,null,null]},
   ]
 };
@@ -888,63 +943,233 @@ function buildFlowerSchedule(yr){
   const rowQ=p=>p.q.reduce((a,v)=>a+(v||0),0);
   const rowS=p=>rowQ(p)*p.ppg;
   const moQ=i=>priced.reduce((a,p)=>a+(p.q[i]||0),0);
+  const moS=i=>priced.reduce((a,p)=>a+(p.q[i]||0)*p.ppg,0);
   const grandQ=priced.reduce((a,p)=>a+rowQ(p),0);
   const grandS=priced.reduce((a,p)=>a+rowS(p),0);
   const blended=grandQ>0?grandS/grandQ:0;
+  const kg=v=>fmtN(Math.round(v/1000));
   let pk=0; for(let i=1;i<MO.length;i++) if(moQ(i)>moQ(pk)) pk=i;
 
   const cid='flower-sched';
-  const specs=[{cid,kind:'flower',labels:MO,series:priced.map(p=>({label:p.n,color:cssVar(p.c),data:p.q.map(v=>v||0)}))}];
+  const specs=[{cid,kind:'flower',labels:MO,series:priced.map(p=>({label:p.n,color:cssVar(p.c),data:p.q.map(v=>(v||0)/1000)}))}];
 
   const stats=`
     <div class="stat-row">
-      <div class="stat"><div class="k">Total Quantity</div><div class="v teal">${fmtK(grandQ)} g</div><div class="s">≈ ${fmtN(Math.round(grandQ/1000))} kg · excl. Hydrocarbon</div></div>
+      <div class="stat"><div class="k">Total Quantity</div><div class="v teal">${kg(grandQ)} kg</div><div class="s">excl. Hydrocarbon</div></div>
       <div class="stat"><div class="k">Total Spend</div><div class="v" style="color:var(--accent)">${fmtMoneyK(grandS)}</div><div class="s">planned procurement</div></div>
       <div class="stat"><div class="k">Blended Cost</div><div class="v lav"><span class="cash">$${blended.toFixed(2)}/g</span></div><div class="s">weighted average</div></div>
       <div class="stat"><div class="k">Product Lines</div><div class="v">${P.length}</div><div class="s">${priced.length} priced · 1 TBD</div></div>
       <div class="stat"><div class="k">Planning Horizon</div><div class="v amber">${MO[0]}–${MO[MO.length-1]}</div><div class="s">${S.yr} · ${MO.length} months</div></div>
-      <div class="stat"><div class="k">Peak Month</div><div class="v">${MO[pk]}</div><div class="s">${fmtK(moQ(pk))} g</div></div>
+      <div class="stat"><div class="k">Peak Month</div><div class="v">${MO[pk]}</div><div class="s">${kg(moQ(pk))} kg</div></div>
     </div>`;
 
   const legend=`<div class="legend">${P.map(p=>`<div class="leg"><div class="leg-sq" style="background:var(${p.c})"></div>${p.n}</div>`).join('')}</div>`;
 
   const G='minmax(0,1.7fr) .5fr repeat(7,.62fr) .82fr .9fr';
-  const head=`<div class="mrow head" style="grid-template-columns:${G}"><div>Flower Type</div><div>$/g</div>${MO.map(m=>`<div>${m}</div>`).join('')}<div>Total g</div><div>Total $</div></div>`;
+  const head=`<div class="mrow head" style="grid-template-columns:${G}"><div>Flower Type</div><div>$/g</div>${MO.map(m=>`<div>${m}</div>`).join('')}<div>Total kg</div><div>Total $</div></div>`;
   const body=P.map(p=>{
-    const cells=p.q.map(v=>p.tbd?`<div class="mc-cell muted">TBD</div>`:`<div class="mc-cell">${v?fmtK(v):'—'}</div>`).join('');
+    const cells=p.q.map(v=>p.tbd?`<div class="mc-cell muted">TBD</div>`:!v?`<div class="mc-cell">—</div>`:`<div class="mc-cell mc-dual">${kg(v)} kg<span class="mc-sub">${fmtMoneyK(v*p.ppg)}</span></div>`).join('');
     return `<div class="mrow" style="grid-template-columns:${G}">
       <div class="mc-month"><span class="dot" style="background:var(${p.c})"></span><span class="skf-d">${p.n}<small>${p.t}</small></span></div>
       <div class="mc-cell"><span class="cash">$${p.ppg.toFixed(2)}</span></div>
       ${cells}
-      <div class="mc-cell teal">${p.tbd?'<span class="muted">TBD</span>':fmtK(rowQ(p))}</div>
+      <div class="mc-cell teal">${p.tbd?'<span class="muted">TBD</span>':kg(rowQ(p))}</div>
       <div class="mc-cell" style="color:var(--accent)">${p.tbd?'<span class="muted">TBD</span>':fmtMoneyK(rowS(p))}</div>
     </div>`;
   }).join('');
   const totRow=`<div class="mrow skf-tot" style="grid-template-columns:${G}">
       <div class="mc-month">Total · ${priced.length} priced lines</div>
       <div class="mc-cell muted">—</div>
-      ${MO.map((m,i)=>`<div class="mc-cell">${fmtK(moQ(i))}</div>`).join('')}
-      <div class="mc-cell teal">${fmtK(grandQ)}</div>
+      ${MO.map((m,i)=>`<div class="mc-cell mc-dual">${kg(moQ(i))} kg<span class="mc-sub">${fmtMoneyK(moS(i))}</span></div>`).join('')}
+      <div class="mc-cell teal">${kg(grandQ)}</div>
       <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(grandS)}</div>
     </div>`;
 
   const card=`<div class="month-card">
       <div class="mc-head">
-        <div class="mc-name"><span class="dot" style="background:var(--accent)"></span>Monthly Quantity by Product</div>
-        <div class="badges"><span class="tb tb-vol">${fmtK(grandQ)} g planned</span><span class="tb tb-nu">${MO[0]}–${MO[MO.length-1]} ${S.yr}</span></div>
+        <div class="mc-name"><span class="dot" style="background:var(--accent)"></span>Monthly Quantity &amp; Spend by Product</div>
+        <div class="badges"><span class="tb tb-vol">${kg(grandQ)} kg planned</span><span class="tb tb-nu">${MO[0]}–${MO[MO.length-1]} ${S.yr}</span></div>
       </div>
       ${stats}
       <div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="${cid}" role="img" aria-label="Monthly flower procurement quantity by product, ${S.yr}"></canvas></div></div>
-      <div class="mtable">${head}${body}${totRow}</div>
+      <div class="mtable-scroll"><div class="mtable">${head}${body}${totRow}</div></div>
     </div>`;
 
-  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: SharePoint · 03. Operations / 08. Planning · “2026-06-21 - Flower Procurement Schedule SLT.xlsx”. Spend = quantity × $/g; Hydrocarbon pricing is TBD and excluded from totals.</div>`;
+  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: SharePoint · 03. Operations / 08. Planning · “2026-06-21 - Flower Procurement Schedule SLT.xlsx”. Each month shows quantity in kilograms (top) and spend (bottom); spend = quantity × $/g. Table scrolls horizontally on narrow screens. Hydrocarbon pricing is TBD and excluded from totals.</div>`;
 
   const html=`<div class="page-head"><div class="page-title">${icon}Flower Procurement Schedule</div><div class="head-right"><span class="tb tb-nu">${S.yr} Plan · updated ${S.updated}</span></div></div>
     ${legend}
     ${card}
     ${note}`;
   return {html,specs};
+}
+
+/* ---------- Planning · Production Schedules ----------
+   Harwill is live from Smartsheet "Harwill Production Schedule"; other sites are scaffolds. */
+const PROD_ICON=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V9l5 4V9l5 4V9l5 4v7"/><path d="M9 20v-4h2v4"/></svg>`;
+const HARWILL_SCHED={"site":"Harwill","updated":"2026-06-21","frm":"2026-06-22","to":"2026-07-07","days":11,"rows":[{"d":"2026-06-22","st":"STAGED","sku":"","desc":"LITTI Gulupa Gulp Distillate 510 Vape 1g","il":"VP64051","iq":"5855 (EOL)","ol":"VP640512","oq":"5855","prov":""},{"d":"2026-06-22","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+ Blunt 1x1g","il":"IR140664","iq":"843","ol":"IR140664","oq":"843","prov":"ON"},{"d":"2026-06-22","st":"ON THE BOARD","sku":"200093","desc":"ELLEVIA 1:700 RSO 1x1g","il":"RK139501","iq":"4995","ol":"RK139501A","oq":"3603+1392 inventory build","prov":"ON"},{"d":"2026-06-22","st":"STAGED","sku":"200142","desc":"SHATTERIZER Rockstar Diamonds+Kief IPR 1x1g","il":"IR141341","iq":"2343","ol":"IR141341","oq":"2343","prov":"ON"},{"d":"2026-06-22","st":"ON THE BOARD","sku":"200350","desc":"BUDDY BLOOMS Sativa PR 1x1g","il":"TBD sativa (260)","iq":"1466","ol":"","oq":"1275","prov":"ON"},{"d":"2026-06-22","st":"ON THE BOARD","sku":"200416","desc":"BUDDY BLOOMS 10th Planet PR 10x0.5g","il":"PR117066","iq":"24","ol":"PR117066","oq":"24","prov":"ON"},{"d":"2026-06-22","st":"PLANNED","sku":"200421","desc":"BUDDY BLOOMS Strawberry OG PR 10x0.5g","il":"TBD indica","iq":"13472","ol":"","oq":"2343","prov":"ON"},{"d":"2026-06-22","st":"ON THE BOARD","sku":"200421","desc":"BUDDY BLOOMS Strawberry OG PR 10x0.5g","il":"TBD indica","iq":"5261","ol":"","oq":"915","prov":"ON"},{"d":"2026-06-22","st":"IN PROGRESS","sku":"200940","desc":"BUDDY BLOOMS Purple Haze PR 10x0.5g","il":"PR116692","iq":"1056 (88 MC)","ol":"PR116692A","oq":"1047","prov":"ON"},{"d":"2026-06-23","st":"STAGED","sku":"","desc":"Sparling lots: S10251528-C/S1309/S1340-B","il":"S10251528-C/S1309/S1340-B","iq":"405/595/188","ol":"H11675","oq":"1188","prov":""},{"d":"2026-06-23","st":"ON THE BOARD","sku":"","desc":"Sparling lots: S10251528-C/S1309/S1340-B at 4.7mm","il":"H11675","iq":"1188","ol":"H11675MF","oq":"1188","prov":""},{"d":"2026-06-23","st":"ON THE BOARD","sku":"200021","desc":"SHATTERIZER 8 Ball Kush Shatter 1x1g","il":"BSHA63232","iq":"2000 (EOL)","ol":"ST632325","oq":"1995","prov":"ON"},{"d":"2026-06-23","st":"STAGED","sku":"200195","desc":"GREAZY Hash Oil IPR 3x0.5g","il":"BIFL13893","iq":"1542 (EOL)","ol":"IR138934","oq":"1023","prov":"ON"},{"d":"2026-06-23","st":"STAGED","sku":"200232","desc":"GREAZY Mac10 Diamonds+Kief IPR 1x1g","il":"IR138864","iq":"396","ol":"IR138864","oq":"396","prov":"ON"},{"d":"2026-06-23","st":"ON THE BOARD","sku":"200335","desc":"BUDDY BLOOMS Lil Buddy Sativa PR 1x0.5g","il":"TBD sativa (260)","iq":"361","ol":"","oq":"627","prov":"ON"},{"d":"2026-06-23","st":"ON THE BOARD","sku":"200360","desc":"BUDDY BLOOMS Big Buddy Indica PR 2x1g","il":"TBD indica","iq":"2877","ol":"","oq":"1251","prov":"ON"},{"d":"2026-06-23","st":"ON THE BOARD","sku":"200426","desc":"BUDDY BLOOMS Ethos Glue PR 10x0.5g","il":"TBD indica","iq":"2708","ol":"","oq":"471","prov":"ON"},{"d":"2026-06-24","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+ Blunt 1x1g","il":"IR140663","iq":"1200","ol":"IR140663","oq":"1200","prov":"ON"},{"d":"2026-06-24","st":"ON THE BOARD","sku":"200142","desc":"SHATTERIZER Rockstar Diamonds+Kief IPR 1x1g","il":"IR140622","iq":"72","ol":"IR140622","oq":"72","prov":"ON"},{"d":"2026-06-24","st":"ON THE BOARD","sku":"200149","desc":"SHATTERIZER Slurricane Shatter+Kief IPR 1x1g","il":"IR141031","iq":"2343","ol":"IR141031","oq":"2343","prov":"ON"},{"d":"2026-06-24","st":"ON THE BOARD","sku":"200940","desc":"BUDDY BLOOMS Purple Haze PR 10x0.5g","il":"TBD sativa (260)","iq":"8780","ol":"","oq":"1527","prov":"ON"},{"d":"2026-06-25","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+ Blunt 1x1g","il":"BIFL14149 / BTHCA13624","iq":"2570 / 386","ol":"IR141491","oq":"2570","prov":""},{"d":"2026-06-25","st":"ON THE BOARD","sku":"200360","desc":"BUDDY BLOOMS Big Buddy Indica PR 2x1g","il":"TBD indica","iq":"1635","ol":"","oq":"711","prov":"ON"},{"d":"2026-06-25","st":"ON THE BOARD","sku":"200365","desc":"BUDDY BLOOMS Big Buddy Sativa PR 2x1g","il":"TBD sativa (260)","iq":"890","ol":"","oq":"387","prov":"ON"},{"d":"2026-06-25","st":"ON THE BOARD","sku":"200441","desc":"CHR Grape Diamonds PR 1x1g","il":"TBD","iq":"1163","ol":"","oq":"1011","prov":"ON"},{"d":"2026-06-25","st":"ON THE BOARD","sku":"200570","desc":"LITTI Pushn' Peach Distillate 510 Vape 1g","il":"VP640332","iq":"453","ol":"VP640332H","oq":"447","prov":"ON"},{"d":"2026-06-26","st":"PLANNED","sku":"200065","desc":"GREAZY Afghan Black Hash 1x2g","il":"HHSH11648","iq":"2767","ol":"HS116484","oq":"1203","prov":"ON"},{"d":"2026-06-26","st":"STAGED","sku":"200232","desc":"GREAZY Mac10 Diamonds+Kief IPR 1x1g","il":"BIFL14074 / HKIF11659","iq":"2847 / 428","ol":"IR140741","oq":"2847","prov":""},{"d":"2026-06-26","st":"FIRM","sku":"200416","desc":"BUDDY BLOOMS 10th Planet PR 10x0.5g","il":"TBD","iq":"8228","ol":"","oq":"1431","prov":"ON"},{"d":"2026-06-26","st":"ON THE BOARD","sku":"200906","desc":"GREAZY Peach Panther Liquid Diamond AIO Vape 1g","il":"VP63990","iq":"1203","ol":"VP639902","oq":"1203","prov":""},{"d":"2026-06-26","st":"ON THE BOARD","sku":"202165","desc":"GREAZY Black Cherry Funk Live Resin AIO Vape 1g","il":"VP637102A","iq":"TBD","ol":"VP637102B","oq":"TBD","prov":"ON"},{"d":"2026-06-29","st":"ON THE BOARD","sku":"","desc":"BUDDY BLOOMS Biggest Buddy Sativa 1x2g pre-roll","il":"PR1161410","iq":"141 MC (1692 units)","ol":"H11614MF","oq":"3384","prov":""},{"d":"2026-06-29","st":"ON THE BOARD","sku":"","desc":"Unportion all PR11614 lots to H11614MF","il":"PR116143/PR116146/PR1161411/PR1161412/PR1161415/PR1161420/PR116141/PR116145","iq":"11/8/5/4/15/18/15/41","ol":"H11614MF","oq":"356","prov":""},{"d":"2026-06-29","st":"STAGED","sku":"200135","desc":"SHATTERIZER 8 Ball Kush Shatter+Kief IPR 1x1g","il":"BIFL14146 / HKIF11609","iq":"2500 / 375 (EOL)","ol":"IR141461","oq":"2500","prov":""},{"d":"2026-06-29","st":"FIRM","sku":"200335","desc":"BUDDY BLOOMS Lil Buddy Sativa PR 1x0.5g","il":"H11688MF","iq":"194 (EOL)","ol":"PR116886","oq":"387","prov":"ON"},{"d":"2026-06-29","st":"PLANNED","sku":"200940","desc":"BUDDY BLOOMS Purple Haze PR 10x0.5g","il":"TBD sativa (260)","iq":"12920","ol":"","oq":"2247","prov":"ON"},{"d":"2026-06-30","st":"PLANNED","sku":"200416","desc":"BUDDY BLOOMS 10th Planet PR 10x0.5g","il":"TBD","iq":"8435","ol":"","oq":"1467","prov":"ON"},{"d":"2026-06-30","st":"PLANNED","sku":"200426","desc":"BUDDY BLOOMS Ethos Glue PR 10x0.5g","il":"TBD indica","iq":"1397","ol":"","oq":"243","prov":"ON"},{"d":"2026-06-30","st":"PLANNED","sku":"200944","desc":"BUDDY BLOOMS Highbrid PR 10x0.5g","il":"TBD indica","iq":"1397","ol":"","oq":"243","prov":"ON"},{"d":"2026-07-02","st":"FIRM","sku":"200232","desc":"GREAZY Mac10 Diamonds+Kief IPR 1x1g","il":"IR138864","iq":"108","ol":"IR138864","oq":"108","prov":"ON"},{"d":"2026-07-02","st":"PLANNED","sku":"200360","desc":"BUDDY BLOOMS Big Buddy Indica PR 2x1g","il":"TBD indica","iq":"3650","ol":"","oq":"1587","prov":"ON"},{"d":"2026-07-02","st":"PLANNED","sku":"200441","desc":"CHR Grape Diamonds PR 1x1g","il":"TBD","iq":"2267","ol":"","oq":"1971","prov":"ON"},{"d":"2026-07-02","st":"FIRM","sku":"200515","desc":"LITTI Gulupa Gulp Distillate 510 Vape 1g","il":"VP640512","iq":"2403","ol":"VP640512A","oq":"2403","prov":"ON"},{"d":"2026-07-02","st":"PLANNED","sku":"200906","desc":"GREAZY Peach Panther Liquid Diamond AIO Vape 1g","il":"VP639902","iq":"1203","ol":"VP639902A","oq":"1203","prov":"ON"},{"d":"2026-07-03","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+% IPR 3x0.5g","il":"BIFL14135 / HKIF11671","iq":"5000 / 1500 (EOL)","ol":"IR141351","oq":"10000","prov":""},{"d":"2026-07-03","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+ Blunt 1x1g","il":"IR141491","iq":"2427","ol":"IR141491","oq":"2427","prov":"ON"},{"d":"2026-07-03","st":"ON THE BOARD","sku":"200135","desc":"SHATTERIZER 8 Ball Kush Shatter+Kief IPR 1x1g","il":"IR141461","iq":"2355","ol":"IR141461","oq":"2355","prov":"ON"},{"d":"2026-07-03","st":"PLANNED","sku":"200421","desc":"BUDDY BLOOMS Strawberry OG PR 10x0.5g","il":"TBD indica","iq":"15197","ol":"","oq":"2643","prov":"ON"},{"d":"2026-07-06","st":"ON THE BOARD","sku":"200232","desc":"GREAZY Mac10 Diamonds+Kief IPR 1x1g","il":"IR140741","iq":"2697","ol":"IR140741","oq":"1203+1494 inventory build","prov":"ON"},{"d":"2026-07-06","st":"PLANNED","sku":"200350","desc":"BUDDY BLOOMS Sativa PR 1x1g","il":"TBD sativa (260)","iq":"362","ol":"","oq":"315","prov":"ON"},{"d":"2026-07-06","st":"PLANNED","sku":"200365","desc":"BUDDY BLOOMS Big Buddy Sativa PR 2x1g","il":"TBD sativa (260)","iq":"2243","ol":"","oq":"975","prov":"ON"},{"d":"2026-07-06","st":"PLANNED","sku":"200375","desc":"BUDDY BLOOMS Big Buddy Sativa PR 5x1g","il":"TBD sativa (260)","iq":"362","ol":"","oq":"63","prov":"ON"},{"d":"2026-07-07","st":"ON THE BOARD","sku":"","desc":"SHATTERIZER Northern Lights 60+% IPR 3x0.5g","il":"IR141351","iq":"10000","ol":"IR141351","oq":"3327","prov":"ON"},{"d":"2026-07-07","st":"PLANNED","sku":"TBD","desc":"LITTI The Juici Pack Double Diamond IPR 5x0.4g","il":"BIFL13862 (C) / BIFL13951 (BB) / BIFL13952 (PT) / BIFL13953 (PU) / BIFL13954 (PO) BTHCA13206","iq":"743x5 / 80x5","ol":"MPR11666","oq":"1479","prov":""}]};
+const SPARLING_SCHED={"site":"Sparling","updated":"2026-06-21","frm":"2026-06-22","solventless":{"name":"Solventless Schedule","cultivars":4,"span":["2026-06-15","2026-12-22"],"batches":[{"name":"Fight Club","code":"FC01-14052025-IG5","stages":[{"p":"Washing (54kg/day)","s":"2026-06-15","e":"2026-06-24","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-06-19","e":"2026-06-29","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-06-30","e":"2026-07-10","i":"15.36","o":"10"},{"p":"Curing","s":"2026-07-10","e":"2026-07-24","i":"","o":""},{"p":"Decarb","s":"2026-07-24","e":"2026-08-06","i":"","o":""},{"p":"Testing","s":"2026-08-06","e":"2026-08-17","i":"","o":"10"}],"start":"2026-06-15","end":"2026-08-17","inKg":"400","outKg":"10"},{"name":"Animal Kush","code":"AK02-28052025-IG7","stages":[{"p":"Washing (54kg/day)","s":"2026-06-25","e":"2026-07-06","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-07-02","e":"2026-07-09","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-07-09","e":"2026-07-21","i":"15.36","o":"10"},{"p":"Curing","s":"2026-07-21","e":"2026-08-04","i":"","o":""},{"p":"Decarb","s":"2026-08-04","e":"2026-08-14","i":"","o":""},{"p":"Testing","s":"2026-08-14","e":"2026-08-24","i":"","o":"10"}],"start":"2026-06-25","end":"2026-08-24","inKg":"400","outKg":"10"},{"name":"G11","code":"G1103-10062025-IG6","stages":[{"p":"Washing (54kg/day)","s":"2026-07-07","e":"2026-07-16","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-07-13","e":"2026-07-22","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-07-22","e":"2026-07-31","i":"15.36","o":"10"},{"p":"Curing","s":"2026-07-31","e":"2026-08-19","i":"","o":""},{"p":"Decarb","s":"2026-08-19","e":"2026-08-24","i":"","o":""},{"p":"Testing","s":"2026-08-24","e":"2026-09-03","i":"","o":"10"}],"start":"2026-07-07","end":"2026-09-03","inKg":"400","outKg":"10"},{"name":"Animal Kush","code":"AK02-28052025-IG7","stages":[{"p":"Washing (54kg/day)","s":"2026-07-17","e":"2026-07-28","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-07-21","e":"2026-08-03","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-08-03","e":"2026-08-12","i":"15.36","o":"10"},{"p":"Curing","s":"2026-08-12","e":"2026-08-26","i":"","o":""},{"p":"Decarb","s":"2026-08-26","e":"2026-09-07","i":"","o":""},{"p":"Testing","s":"2026-09-07","e":"2026-09-17","i":"","o":"10"}],"start":"2026-07-17","end":"2026-09-17","inKg":"400","outKg":"10"},{"name":"Fight Club","code":"FC02-28052025-IG5","stages":[{"p":"Washing (54kg/day)","s":"2026-07-29","e":"2026-08-07","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-08-02","e":"2026-08-10","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-08-10","e":"2026-08-24","i":"15.36","o":"10"},{"p":"Curing","s":"2026-08-24","e":"2026-09-07","i":"","o":""},{"p":"Decarb","s":"2026-09-07","e":"2026-09-17","i":"","o":""},{"p":"Testing","s":"2026-09-17","e":"2026-09-28","i":"","o":"10"}],"start":"2026-07-29","end":"2026-09-28","inKg":"400","outKg":"10"},{"name":"G11","code":"G1103-10062025-IG6","stages":[{"p":"Washing (54kg/day)","s":"2026-08-08","e":"2026-08-18","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-08-17","e":"2026-08-24","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-08-24","e":"2026-09-02","i":"15.36","o":"10"},{"p":"Curing","s":"2026-09-02","e":"2026-09-16","i":"","o":""},{"p":"Decarb","s":"2026-09-16","e":"2026-09-28","i":"","o":""},{"p":"Testing","s":"2026-09-28","e":"2026-10-08","i":"","o":"10"}],"start":"2026-08-08","end":"2026-10-08","inKg":"400","outKg":"10"},{"name":"Animal Kush","code":"AK02-28052025-IG7","stages":[{"p":"Washing (54kg/day)","s":"2026-08-19","e":"2026-08-28","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-08-23","e":"2026-08-31","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-08-31","e":"2026-09-14","i":"15.36","o":"10"},{"p":"Curing","s":"2026-09-14","e":"2026-09-28","i":"","o":""},{"p":"Decarb","s":"2026-09-28","e":"2026-10-08","i":"","o":""},{"p":"Testing","s":"2026-10-08","e":"2026-10-19","i":"","o":"10"}],"start":"2026-08-19","end":"2026-10-19","inKg":"400","outKg":"10"},{"name":"Fight Club","code":"FC02-28052025-IG5","stages":[{"p":"Washing (54kg/day)","s":"2026-08-29","e":"2026-09-08","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-09-07","e":"2026-09-15","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-09-15","e":"2026-09-24","i":"15.36","o":"10"},{"p":"Curing","s":"2026-09-24","e":"2026-10-08","i":"","o":""},{"p":"Decarb","s":"2026-10-08","e":"2026-10-19","i":"","o":""},{"p":"Testing","s":"2026-10-19","e":"2026-10-29","i":"","o":"10"}],"start":"2026-08-29","end":"2026-10-29","inKg":"400","outKg":"10"},{"name":"G11","code":"G1103-10062025-IG6","stages":[{"p":"Washing (54kg/day)","s":"2026-09-14","e":"2026-09-23","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-09-18","e":"2026-09-28","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-09-28","e":"2026-10-07","i":"15.36","o":"10"},{"p":"Curing","s":"2026-10-07","e":"2026-10-21","i":"","o":""},{"p":"Decarb","s":"2026-10-21","e":"2026-11-02","i":"","o":""},{"p":"Testing","s":"2026-11-02","e":"2026-11-12","i":"","o":"10"}],"start":"2026-09-14","end":"2026-11-12","inKg":"400","outKg":"10"},{"name":"Black Cherry Punch","code":"BCP01-14052025-IG3","stages":[{"p":"Washing (54kg/day)","s":"2026-09-24","e":"2026-10-05","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-09-28","e":"2026-10-08","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-10-08","e":"2026-10-19","i":"15.36","o":"10"},{"p":"Curing","s":"2026-10-19","e":"2026-11-02","i":"","o":""},{"p":"Decarb","s":"2026-11-02","e":"2026-11-12","i":"","o":""},{"p":"Testing","s":"2026-11-12","e":"2026-11-23","i":"","o":"10"}],"start":"2026-09-24","end":"2026-11-23","inKg":"400","outKg":"10"},{"name":"Fight Club","code":"FC02-28052025-IG5","stages":[{"p":"Washing (54kg/day)","s":"2026-10-06","e":"2026-10-15","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-10-12","e":"2026-10-20","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-10-20","e":"2026-10-29","i":"15.36","o":"10"},{"p":"Curing","s":"2026-10-29","e":"2026-11-12","i":"","o":""},{"p":"Decarb","s":"2026-11-12","e":"2026-11-22","i":"","o":""},{"p":"Testing","s":"2026-11-22","e":"2026-12-02","i":"","o":"10"}],"start":"2026-10-06","end":"2026-12-02","inKg":"400","outKg":"10"},{"name":"G11","code":"G1103-10062025-IG6","stages":[{"p":"Washing (54kg/day)","s":"2026-10-16","e":"2026-10-27","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-10-20","e":"2026-10-30","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-10-30","e":"2026-11-08","i":"15.36","o":"10"},{"p":"Curing","s":"2026-11-08","e":"2026-11-22","i":"","o":""},{"p":"Decarb","s":"2026-11-22","e":"2026-12-02","i":"","o":""},{"p":"Testing","s":"2026-12-02","e":"2026-12-12","i":"","o":"10"}],"start":"2026-10-16","end":"2026-12-12","inKg":"400","outKg":"10"},{"name":"Black Cherry Punch","code":"BCP01-14052025-IG3","stages":[{"p":"Washing (54kg/day)","s":"2026-10-28","e":"2026-11-06","i":"400","o":"48"},{"p":"Freeze Dry+Bagging (40g/bag) (32%)","s":"2026-11-01","e":"2026-11-09","i":"48","o":"15.36"},{"p":"Pressing (45 bags/day / 1800g/day) (62%)","s":"2026-11-09","e":"2026-11-18","i":"15.36","o":"10"},{"p":"Curing","s":"2026-11-18","e":"2026-12-02","i":"","o":""},{"p":"Decarb","s":"2026-12-02","e":"2026-12-12","i":"","o":""},{"p":"Testing","s":"2026-12-12","e":"2026-12-22","i":"","o":"10"}],"start":"2026-10-28","end":"2026-12-22","inKg":"400","outKg":"10"}]},"gmp":{"name":"GMP Distillate Tracker","span":["2026-08-10","2026-11-02"],"lots":[{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-08-10","e":"2026-08-13","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-08-14","e":"2026-08-24","st":"Not Started"},{"p":"Distillation","s":"2026-08-25","e":"2026-08-27","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-08-27","e":"2026-09-06","st":""},{"p":"Primary Packaging","s":"2026-09-07","e":"2026-09-07","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-09-14","e":"2026-09-14","st":"Not Started"}],"label":"Lot 1","start":"2026-08-10","end":"2026-09-14"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-08-17","e":"2026-08-20","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-08-21","e":"2026-08-31","st":"Not Started"},{"p":"Distillation","s":"2026-09-01","e":"2026-09-03","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-09-03","e":"2026-09-13","st":""},{"p":"Primary Packaging","s":"2026-09-14","e":"2026-09-14","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-09-21","e":"2026-09-21","st":"Not Started"}],"label":"Lot 2","start":"2026-08-17","end":"2026-09-21"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-08-24","e":"2026-08-27","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-08-28","e":"2026-09-07","st":"Not Started"},{"p":"Distillation","s":"2026-09-08","e":"2026-09-10","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-09-10","e":"2026-09-20","st":""},{"p":"Primary Packaging","s":"2026-09-21","e":"2026-09-21","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-09-28","e":"2026-09-28","st":"Not Started"}],"label":"Lot 3","start":"2026-08-24","end":"2026-09-28"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-08-31","e":"2026-09-03","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-09-04","e":"2026-09-14","st":"Not Started"},{"p":"Distillation","s":"2026-09-15","e":"2026-09-17","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-09-17","e":"2026-09-27","st":""},{"p":"Primary Packaging","s":"2026-09-28","e":"2026-09-28","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-10-05","e":"2026-10-05","st":"Not Started"}],"label":"Lot 4","start":"2026-08-31","end":"2026-10-05"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-09-07","e":"2026-09-10","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-09-11","e":"2026-09-21","st":"Not Started"},{"p":"Distillation","s":"2026-09-22","e":"2026-09-24","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-09-24","e":"2026-10-04","st":""},{"p":"Primary Packaging","s":"2026-10-05","e":"2026-10-05","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-10-12","e":"2026-10-12","st":"Not Started"}],"label":"Lot 5","start":"2026-09-07","end":"2026-10-12"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-09-14","e":"2026-09-17","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-09-18","e":"2026-09-28","st":"Not Started"},{"p":"Distillation","s":"2026-09-29","e":"2026-10-01","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-10-01","e":"2026-10-11","st":""},{"p":"Primary Packaging","s":"2026-10-12","e":"2026-10-12","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-10-19","e":"2026-10-19","st":"Not Started"}],"label":"Lot 6","start":"2026-09-14","end":"2026-10-19"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-09-21","e":"2026-09-24","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-09-25","e":"2026-10-05","st":"Not Started"},{"p":"Distillation","s":"2026-10-06","e":"2026-10-08","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-10-08","e":"2026-10-18","st":""},{"p":"Primary Packaging","s":"2026-10-19","e":"2026-10-19","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-10-26","e":"2026-10-26","st":"Not Started"}],"label":"Lot 7","start":"2026-09-21","end":"2026-10-26"},{"stages":[{"p":"Supercritical CO2 extraction","s":"2026-09-28","e":"2026-10-01","st":"Not Started"},{"p":"Winterization and Filtration","s":"2026-10-02","e":"2026-10-12","st":"Not Started"},{"p":"Distillation","s":"2026-10-13","e":"2026-10-15","st":"Not Started"},{"p":"Sampling/Testing (VV)","s":"2026-10-15","e":"2026-10-25","st":""},{"p":"Primary Packaging","s":"2026-10-26","e":"2026-10-26","st":"Not Started"},{"p":"Labelling + Master Case","s":"2026-11-02","e":"2026-11-02","st":"Not Started"}],"label":"Lot 8","start":"2026-09-28","end":"2026-11-02"}]}};
+
+function buildProductionSchedule(yr,siteKey){
+  const site=PROD_SITES.find(s=>s.key===siteKey)||PROD_SITES[0];
+  if(siteKey==='harwill') return buildHarwillProd(yr);
+  if(siteKey==='sparling') return buildSparlingProd(yr);
+  const note=`<div class="inprog"><span class="tag">Building</span><span>The ${site.name} production schedule is being prepared — this page is a placeholder and will populate once the site's schedule data is loaded.</span></div>`;
+  const body=`<div class="ops-ph"><div class="ph-d">Planned production runs at ${site.name} by line, product and week — build quantities, run-rate and scheduling against the demand plan.</div><span class="ph-chip">Awaiting data</span></div>`;
+  return {html:`<div class="page-head"><div class="page-title">${PROD_ICON}${site.name} · Production Schedule</div></div>${note}${body}`, specs:[]};
+}
+
+function buildHarwillProd(yr){
+  const H=HARWILL_SCHED, R=H.rows;
+  const mf=v=>v||'—';
+  const stMap={'IN PROGRESS':'st-prog','FIRM':'st-firm','STAGED':'st-staged','ON THE BOARD':'st-board','PLANNED':'st-planned'};
+  const stLab={'IN PROGRESS':'In Progress','FIRM':'Firm','STAGED':'Staged','ON THE BOARD':'On Board','PLANNED':'Planned'};
+  const skuSet=new Set(R.map(r=>r.sku).filter(s=>s&&s!=='TBD'));
+  const inProg=R.filter(r=>r.st==='IN PROGRESS').length;
+  const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDay=iso=>{const p=iso.split('-').map(Number);const dt=new Date(Date.UTC(p[0],p[1]-1,p[2]));return{dow:DOW[dt.getUTCDay()],lab:MON[p[1]-1]+' '+p[2]};};
+  const win=fmtDay(H.frm).lab+'–'+fmtDay(H.to).lab;
+
+  const days=[];
+  R.forEach(r=>{let g=days.find(x=>x.d===r.d);if(!g){g={d:r.d,rows:[]};days.push(g);}g.rows.push(r);});
+
+  const stats=`<div class="month-card" style="margin-bottom:16px">
+    <div class="mc-head">
+      <div class="mc-name"><span class="dot" style="background:var(--accent)"></span>Schedule Window</div>
+      <div class="badges"><span class="tb tb-vol">${fmtN(R.length)} runs</span><span class="tb tb-up">${inProg} in progress</span><span class="tb tb-nu">${win} ${yr}</span></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="k">Scheduled Runs</div><div class="v teal">${fmtN(R.length)}</div><div class="s">${win} ${yr}</div></div>
+      <div class="stat"><div class="k">Production Days</div><div class="v lav">${fmtN(H.days)}</div><div class="s">working days</div></div>
+      <div class="stat"><div class="k">Distinct SKUs</div><div class="v amber">${fmtN(skuSet.size)}</div><div class="s">finished goods</div></div>
+    </div>
+  </div>`;
+
+  const legend=`<div class="legend">
+    <div class="leg"><span class="dot" style="background:var(--teal)"></span>In Progress</div>
+    <div class="leg"><span class="dot" style="background:var(--accent)"></span>Firm</div>
+    <div class="leg"><span class="dot" style="background:var(--lav)"></span>Staged</div>
+    <div class="leg"><span class="dot" style="background:var(--muted)"></span>On Board</div>
+    <div class="leg" style="color:var(--faint)"><span class="dot" style="background:var(--faint)"></span>Planned</div>
+  </div>`;
+
+  const headRow=`<div class="srow head"><div>SKU</div><div>Product Description</div><div>Input Lot</div><div class="r">Input Qty</div><div>Output Lot</div><div class="r">Output Qty</div><div style="text-align:center">Prov</div><div>Status</div></div>`;
+
+  const dayBlocks=days.map(g=>{
+    const dd=fmtDay(g.d);
+    const body=g.rows.map(r=>`<div class="srow">
+        <div class="s-sku">${mf(r.sku)}</div>
+        <div class="s-desc">${mf(r.desc)}</div>
+        <div class="s-lot">${mf(r.il)}</div>
+        <div class="s-qty">${mf(r.iq)}</div>
+        <div class="s-out">${mf(r.ol)}</div>
+        <div class="s-qty">${mf(r.oq)}</div>
+        <div class="s-prov">${r.prov||'—'}</div>
+        <div><span class="s-st ${stMap[r.st]||'st-board'}">${stLab[r.st]||r.st||'—'}</span></div>
+      </div>`).join('');
+    return `<div class="sched-day">
+        <div class="sd-head"><span class="sd-dow">${dd.dow}</span><span class="sd-date">${dd.lab}, ${yr}</span><span class="sd-cnt">${g.rows.length} run${g.rows.length===1?'':'s'}</span></div>
+        <div class="sched-scroll"><div class="stable">${headRow}${body}</div></div>
+      </div>`;
+  }).join('');
+
+  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:16px;line-height:1.55">Source: Smartsheet · &ldquo;Harwill Production Schedule&rdquo; (live), pulled ${H.updated}. Day-by-day run schedule from ${fmtDay(H.frm).lab}, ${yr} forward — ${R.length} runs across ${H.days} production days. SKU, lots, quantities, province &amp; status shown verbatim from the sheet; blank cells are unset at source. Tables scroll horizontally on narrow screens.</div>`;
+
+  const html=`<div class="page-head"><div class="page-title">${PROD_ICON}Harwill · Production Schedule</div><div class="head-right"><span class="tb tb-nu">Smartsheet · updated ${H.updated}</span></div></div>
+    ${stats}
+    ${legend}
+    ${dayBlocks}
+    ${note}`;
+  return {html,specs:[]};
+}
+
+function buildSparlingProd(yr){
+  const S=SPARLING_SCHED;
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const md=iso=>{if(!iso)return '—';const p=iso.split('-').map(Number);return MON[p[1]-1]+' '+p[2];};
+  const span=([a,b])=>md(a)+' – '+md(b);
+  const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?0:n;};
+  const nf=v=>{const n=num(v);return Number.isInteger(n)?fmtN(n):n.toLocaleString(undefined,{maximumFractionDigits:2});};
+
+  /* ---- Solventless ---- */
+  const SV=S.solventless;
+  const svIn=SV.batches.reduce((a,b)=>a+num(b.inKg),0);
+  const svOut=SV.batches.reduce((a,b)=>a+num(b.outKg),0);
+  const svStats=`<div class="month-card" style="margin-bottom:16px">
+    <div class="mc-head"><div class="mc-name"><span class="dot" style="background:var(--accent)"></span>Solventless · Window</div>
+      <div class="badges"><span class="tb tb-vol">${SV.batches.length} batches</span><span class="tb tb-nu">${span(SV.span)} ${yr}</span></div></div>
+    <div class="stat-row">
+      <div class="stat"><div class="k">Wash Batches</div><div class="v teal">${fmtN(SV.batches.length)}</div><div class="s">${SV.cultivars} cultivars</div></div>
+      <div class="stat"><div class="k">Input Biomass</div><div class="v lav">${fmtN(svIn)} kg</div><div class="s">into washing</div></div>
+      <div class="stat"><div class="k">Finished Output</div><div class="v amber">${nf(svOut)} kg</div><div class="s">post-testing rosin</div></div>
+    </div>
+  </div>`;
+  const svG='minmax(150px,1.7fr) 86px 86px 80px 84px';
+  const svHead=`<div class="prow head" style="grid-template-columns:${svG}"><div>Process Stage</div><div>Start</div><div>End</div><div class="r">Input kg</div><div class="r">Output kg</div></div>`;
+  const svCards=SV.batches.map(b=>{
+    const rows=b.stages.map(s=>`<div class="prow" style="grid-template-columns:${svG}">
+        <div class="p-stage">${s.p}</div>
+        <div class="p-date">${md(s.s)}</div>
+        <div class="p-date">${md(s.e)}</div>
+        <div class="p-kg">${s.i?nf(s.i):'—'}</div>
+        <div class="p-kg teal">${s.o?nf(s.o):'—'}</div>
+      </div>`).join('');
+    return `<div class="month-card" style="margin-bottom:12px">
+        <div class="mc-head"><div class="mc-name"><span class="dot" style="background:var(--teal)"></span>${b.name}<span class="b-code">${b.code}</span></div>
+          <div class="badges"><span class="tb tb-nu">${span([b.start,b.end])} ${yr}</span><span class="tb tb-vol">${nf(b.inKg)}→${nf(b.outKg)} kg</span></div></div>
+        <div class="sched-scroll"><div class="ptable" style="min-width:540px">${svHead}${rows}</div></div>
+      </div>`;
+  }).join('');
+
+  /* ---- GMP Distillate ---- */
+  const GP=S.gmp;
+  const totStages=GP.lots.reduce((a,l)=>a+l.stages.length,0);
+  const gpStats=`<div class="month-card" style="margin-bottom:16px">
+    <div class="mc-head"><div class="mc-name"><span class="dot" style="background:var(--accent)"></span>GMP Distillate · Window</div>
+      <div class="badges"><span class="tb tb-vol">${GP.lots.length} lots</span><span class="tb tb-nu">${span(GP.span)} ${yr}</span></div></div>
+    <div class="stat-row">
+      <div class="stat"><div class="k">Distillate Lots</div><div class="v teal">${fmtN(GP.lots.length)}</div><div class="s">GMP / export</div></div>
+      <div class="stat"><div class="k">Production Stages</div><div class="v lav">${fmtN(totStages)}</div><div class="s">scheduled</div></div>
+      <div class="stat"><div class="k">Complete</div><div class="v amber">0%</div><div class="s">all not started</div></div>
+    </div>
+  </div>`;
+  const gpG='minmax(160px,1.9fr) 86px 92px 96px';
+  const gpHead=`<div class="prow head" style="grid-template-columns:${gpG}"><div>Process Stage</div><div>Start</div><div>Complete</div><div>Status</div></div>`;
+  const stCls=st=>/progress/i.test(st)?'st-prog':/complete|done/i.test(st)?'st-firm':'st-planned';
+  const gpCards=GP.lots.map(l=>{
+    const rows=l.stages.map(s=>`<div class="prow" style="grid-template-columns:${gpG}">
+        <div class="p-stage">${s.p}</div>
+        <div class="p-date">${md(s.s)}</div>
+        <div class="p-date">${md(s.e)}</div>
+        <div><span class="s-st ${stCls(s.st)}">${s.st||'—'}</span></div>
+      </div>`).join('');
+    return `<div class="month-card" style="margin-bottom:12px">
+        <div class="mc-head"><div class="mc-name"><span class="dot" style="background:var(--lav)"></span>GMP Distillate · ${l.label}</div>
+          <div class="badges"><span class="tb tb-nu">${span([l.start,l.end])} ${yr}</span><span class="tb tb-vol">${l.stages.length} stages</span></div></div>
+        <div class="sched-scroll"><div class="ptable" style="min-width:480px">${gpHead}${rows}</div></div>
+      </div>`;
+  }).join('');
+  const gpNote=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--faint);margin:2px 2px 12px">Input/output lot numbers &amp; quantities are not yet entered at source — each lot also carries import/export permit tasks (regulatory) tracked separately on the sheet.</div>`;
+
+  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:18px;line-height:1.55">Source: Smartsheet · &ldquo;Solventless Schedule&rdquo; &amp; &ldquo;GMP Distillate Tracker&rdquo; (live), pulled ${S.updated}. Forward production plan from ${md(S.frm)} ${yr}. Both are staged batch pipelines — solventless rosin runs Washing → Freeze-Dry → Pressing → Curing → Decarb → Testing; GMP distillate runs CO₂ Extraction → Winterization → Distillation → Testing → Packaging → Labelling. Tables scroll horizontally on narrow screens.</div>`;
+
+  const toggle=`<div class="seg-slider spar-toggle" id="sparStream" style="--n:2;--i:0"><span class="seg-thumb"></span><button class="seg active" data-stream="solventless">Solventless Rosin</button><button class="seg" data-stream="gmp">GMP Distillate</button></div>`;
+  const html=`<div class="page-head"><div class="page-title">${PROD_ICON}Sparling · Production Schedule</div><div class="head-right"><span class="tb tb-nu">Smartsheet · updated ${S.updated}</span></div></div>
+    ${toggle}
+    <div id="spar-solventless" class="spar-pane">
+      <div class="stream-head"><div class="stream-title"><span class="dot" style="background:var(--teal)"></span>Solventless Rosin</div><span class="stream-sub">${SV.batches.length} batches · ${span(SV.span)} ${yr}</span></div>
+      ${svStats}
+      ${svCards}
+    </div>
+    <div id="spar-gmp" class="spar-pane hidden">
+      <div class="stream-head"><div class="stream-title"><span class="dot" style="background:var(--lav)"></span>GMP Distillate</div><span class="stream-sub">${GP.lots.length} lots · ${span(GP.span)} ${yr}</span></div>
+      ${gpStats}
+      ${gpNote}
+      ${gpCards}
+    </div>
+    ${note}`;
+  return {html,specs:[]};
 }
 
 /* ---------- overview · forecast for a selected future month ---------- */
@@ -1456,7 +1681,12 @@ function renderNav(yr,active){
     return;
   }
   if(isPlanningPage(active)){
-    let html=`<div class="nav-sec first">Planning</div>`;
+    let html=`<div class="nav-sec first">Schedules</div>`;
+    PROD_SITES.forEach(s=>{
+      const pg='planning:prod:'+s.key;
+      html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${s.name}</span></button>`;
+    });
+    html+=`<div class="nav-sec">Procurement</div>`;
     PLANNING_SECTIONS.forEach(s=>{
       const pg='planning:'+s.key;
       html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${s.name}</span></button>`;
@@ -1496,7 +1726,7 @@ function showPage(yr,page){
   if(cmpMode==='yoy'&&completeMonths(String(Number(yr)-1)).length===0)cmpMode='mom'; // no prior year to compare against
   if(cmpMode==='fcst'&&page.slice(0,6)==='brand:')cmpMode='mom'; // forecast is category-level; SKU data has no plan
   const main=document.getElementById('main');
-  const r= page==='overview'?buildOverview(yr):page==='planning:flower'?buildFlowerSchedule(yr):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
+  const r= page==='overview'?buildOverview(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
   main.innerHTML=r.html;
   (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
   document.querySelectorAll('#nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
@@ -1584,6 +1814,16 @@ document.addEventListener('click',e=>{
   if(!mb||mb.disabled)return;
   selMonth=mb.dataset.mon;
   showPage(curYr,curPage);
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('#sparStream .seg[data-stream]');
+  if(!b)return;
+  const grp=b.parentElement;
+  [...grp.querySelectorAll('.seg')].forEach((s,i)=>{const on=s===b;s.classList.toggle('active',on);if(on)grp.style.setProperty('--i',i);});
+  const sel=b.dataset.stream;
+  const sv=document.getElementById('spar-solventless'), gp=document.getElementById('spar-gmp');
+  if(sv)sv.classList.toggle('hidden',sel!=='solventless');
+  if(gp)gp.classList.toggle('hidden',sel!=='gmp');
 });
 document.addEventListener('click',e=>{
   const ob=e.target.closest&&e.target.closest('.ov-brand[data-page]');
