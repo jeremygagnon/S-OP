@@ -210,6 +210,29 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .ops-ph .ph-d{font-size:12px;color:var(--muted);line-height:1.45;max-width:64ch;}
 .ops-ph .ph-chip{flex:0 0 auto;font-size:9px;font-family:var(--mono);letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);background:rgba(240,183,61,.14);padding:5px 10px;border-radius:6px;white-space:nowrap;}
 
+/* ---------- master data (ERP-style item / BOM / routing master) ---------- */
+.md-sec{margin-bottom:30px;}
+.md-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
+.md-stat{background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;box-shadow:var(--card-elev);}
+.md-stat-v{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-0.01em;}
+.md-stat-l{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-top:8px;}
+.md-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;box-shadow:var(--card-elev);}
+.md-bom-card .md-wrap{border:none;border-radius:0;box-shadow:none;background:transparent;}
+.md-table{width:100%;border-collapse:collapse;font-size:12px;min-width:620px;}
+.md-table th{text-align:left;font-family:var(--mono);font-size:9px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.md-table td{padding:10px 14px;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:top;}
+.md-table tbody tr:last-child td{border-bottom:none;}
+.md-table tbody tr:hover td{background:var(--panel-2);}
+.md-table th.num,.md-table td.num{text-align:right;font-family:var(--mono);white-space:nowrap;}
+.md-table td.md-desc{color:var(--ink);max-width:360px;}
+.md-table .md-code{font-family:var(--mono);color:var(--accent);font-weight:600;white-space:nowrap;}
+.md-table .md-cat{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.md-pill{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.06em;padding:3px 7px;border-radius:5px;}
+.md-pill.fg{color:var(--teal);background:rgba(61,220,138,.14);}
+.md-pill.raw{color:var(--amber);background:rgba(240,183,61,.14);}
+.md-pill.pkg{color:var(--lav);background:rgba(167,139,250,.14);}
+.md-bom-card .mc-name .md-code{color:var(--accent);}
+
 /* ---------- legend ---------- */
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
 .leg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);font-family:var(--mono);}
@@ -620,11 +643,11 @@ const STATUS={
 // f:forecast units · s:sold units · d:$ sold (revenue) · c:cases sold. d/c are null where the source has no $/cases (all 2025; 2026 future months).
 const DATA={
   2026:{
-    'Pre-Rolls':{Jan:{f:115463,s:33672,d:300626,c:2600},Feb:{f:118763,s:81072,d:837241,c:5843},Mar:{f:125483,s:75876,d:675654,c:5080},Apr:{f:88420,s:93432,d:801712,c:6177},May:{f:91218,s:56472,d:497237,c:3884},Jun:{f:91537,s:68940,d:592138,c:4776},Jul:{f:96156,s:0,d:null,c:null},Aug:{f:101034,s:0,d:null,c:null},Sep:{f:102908,s:0,d:null,c:null},Oct:{f:105214,s:0,d:null,c:null},Nov:{f:108157,s:0,d:null,c:null},Dec:{f:111108,s:0,d:null,c:null}},
-    'Infused Pre-Rolls':{Jan:{f:39301,s:9792,d:110747,c:816},Feb:{f:38149,s:19788,d:209647,c:1649},Mar:{f:41113,s:26208,d:286663,c:2184},Apr:{f:22466,s:24132,d:244170,c:2011},May:{f:23138,s:18240,d:190776,c:1520},Jun:{f:22542,s:12804,d:127033,c:1067},Jul:{f:22613,s:0,d:null,c:null},Aug:{f:23504,s:0,d:null,c:null},Sep:{f:24533,s:0,d:null,c:null},Oct:{f:25721,s:0,d:null,c:null},Nov:{f:26806,s:0,d:null,c:null},Dec:{f:27965,s:0,d:null,c:null}},
-    'Vapes':{Jan:{f:37444,s:15492,d:278708,c:1291},Feb:{f:37324,s:18612,d:322795,c:1551},Mar:{f:38464,s:30072,d:515319,c:2506},Apr:{f:33333,s:14904,d:256329,c:1242},May:{f:38126,s:9228,d:160547,c:769},Jun:{f:26500,s:6708,d:114730,c:559},Jul:{f:25539,s:0,d:null,c:null},Aug:{f:26053,s:0,d:null,c:null},Sep:{f:27463,s:0,d:null,c:null},Oct:{f:28978,s:0,d:null,c:null},Nov:{f:30297,s:0,d:null,c:null},Dec:{f:31759,s:0,d:null,c:null}},
-    'Extracts':{Jan:{f:11344,s:7142,d:115159,c:761},Feb:{f:10354,s:9336,d:149395,c:889},Mar:{f:10894,s:11604,d:184164,c:1226},Apr:{f:9634,s:9550,d:150699,c:1022},May:{f:9977,s:5036,d:79852,c:531},Jun:{f:9522,s:4654,d:73422,c:428},Jul:{f:9858,s:0,d:null,c:null},Aug:{f:10285,s:0,d:null,c:null},Sep:{f:10730,s:0,d:null,c:null},Oct:{f:11181,s:0,d:null,c:null},Nov:{f:11668,s:0,d:null,c:null},Dec:{f:12172,s:0,d:null,c:null}},
-    'Flower':{Jan:{f:1080,s:822,d:14656,c:44},Feb:{f:1152,s:816,d:14645,c:37},Mar:{f:1152,s:954,d:17054,c:48},Apr:{f:890,s:1278,d:22736,c:72},May:{f:906,s:1032,d:18447,c:52},Jun:{f:941,s:348,d:6243,c:16},Jul:{f:968,s:0,d:null,c:null},Aug:{f:1004,s:0,d:null,c:null},Sep:{f:1040,s:0,d:null,c:null},Oct:{f:1077,s:0,d:null,c:null},Nov:{f:1114,s:0,d:null,c:null},Dec:{f:1152,s:0,d:null,c:null}}
+    'Pre-Rolls':{Jan:{f:115463,s:33672,d:300626,c:2600},Feb:{f:118763,s:81072,d:837241,c:5843},Mar:{f:125483,s:75876,d:675654,c:5080},Apr:{f:88420,s:93432,d:801712,c:6177},May:{f:91218,s:56472,d:497237,c:3884},Jun:{f:91537,s:67560,d:592138,c:4776},Jul:{f:96156,s:0,d:null,c:null},Aug:{f:101034,s:0,d:null,c:null},Sep:{f:102908,s:0,d:null,c:null},Oct:{f:105214,s:0,d:null,c:null},Nov:{f:108157,s:0,d:null,c:null},Dec:{f:111108,s:0,d:null,c:null}},
+    'Infused Pre-Rolls':{Jan:{f:39301,s:9792,d:110747,c:816},Feb:{f:38149,s:19788,d:209647,c:1649},Mar:{f:41113,s:26208,d:286663,c:2184},Apr:{f:22466,s:24132,d:244170,c:2011},May:{f:23138,s:18240,d:190776,c:1520},Jun:{f:22542,s:16068,d:127033,c:1067},Jul:{f:22613,s:0,d:null,c:null},Aug:{f:23504,s:0,d:null,c:null},Sep:{f:24533,s:0,d:null,c:null},Oct:{f:25721,s:0,d:null,c:null},Nov:{f:26806,s:0,d:null,c:null},Dec:{f:27965,s:0,d:null,c:null}},
+    'Vapes':{Jan:{f:37444,s:15492,d:278708,c:1291},Feb:{f:37324,s:18612,d:322795,c:1551},Mar:{f:38464,s:30072,d:515319,c:2506},Apr:{f:33333,s:14904,d:256329,c:1242},May:{f:38126,s:9228,d:160547,c:769},Jun:{f:26500,s:8292,d:114730,c:559},Jul:{f:25539,s:0,d:null,c:null},Aug:{f:26053,s:0,d:null,c:null},Sep:{f:27463,s:0,d:null,c:null},Oct:{f:28978,s:0,d:null,c:null},Nov:{f:30297,s:0,d:null,c:null},Dec:{f:31759,s:0,d:null,c:null}},
+    'Extracts':{Jan:{f:11344,s:7142,d:115159,c:761},Feb:{f:10354,s:9336,d:149395,c:889},Mar:{f:10894,s:11604,d:184164,c:1226},Apr:{f:9634,s:9550,d:150699,c:1022},May:{f:9977,s:5036,d:79852,c:531},Jun:{f:9522,s:5832,d:73422,c:428},Jul:{f:9858,s:0,d:null,c:null},Aug:{f:10285,s:0,d:null,c:null},Sep:{f:10730,s:0,d:null,c:null},Oct:{f:11181,s:0,d:null,c:null},Nov:{f:11668,s:0,d:null,c:null},Dec:{f:12172,s:0,d:null,c:null}},
+    'Flower':{Jan:{f:1080,s:822,d:14656,c:44},Feb:{f:1152,s:816,d:14645,c:37},Mar:{f:1152,s:954,d:17054,c:48},Apr:{f:890,s:1278,d:22736,c:72},May:{f:906,s:1032,d:18447,c:52},Jun:{f:941,s:600,d:6243,c:16},Jul:{f:968,s:0,d:null,c:null},Aug:{f:1004,s:0,d:null,c:null},Sep:{f:1040,s:0,d:null,c:null},Oct:{f:1077,s:0,d:null,c:null},Nov:{f:1114,s:0,d:null,c:null},Dec:{f:1152,s:0,d:null,c:null}}
   },
   2025:{
     'Pre-Rolls':{Jan:{f:108357,s:61619,d:531517,c:4393},Feb:{f:102345,s:64836,d:502648,c:4583},Mar:{f:4,s:47091,d:393869,c:3107},Apr:{f:1,s:184608,d:1368213,c:12214},May:{f:0,s:86388,d:724107,c:6190},Jun:{f:0,s:204036,d:1690825,c:14143},Jul:{f:0,s:78588,d:605166,c:5488},Aug:{f:0,s:184668,d:1461816,c:12888},Sep:{f:0,s:149700,d:1208538,c:10490},Oct:{f:166701,s:167328,d:1454839,c:11895},Nov:{f:0,s:50136,d:484780,c:3705},Dec:{f:0,s:63012,d:630229,c:4894}},
@@ -1013,10 +1036,102 @@ const pageMode=p=>isPlanningPage(p)?'planning':isOpsPage(p)?'operations':'sales'
 function buildOperations(yr,page){
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>`;
   const key=(page&&page.slice(0,4)==='ops:')?page.slice(4):OPS_SECTIONS[0].key;
+  if(key==='masterdata')return buildMasterData(yr);
   const sec=OPS_SECTIONS.find(s=>s.key===key)||OPS_SECTIONS[0];
   const note=`<div class="inprog"><span class="tag">Building</span><span>Operations data is being prepared — this section is a placeholder and will populate once the underlying data is loaded.</span></div>`;
   const body=`<div class="ops-ph"><div class="ph-d">${sec.desc}</div><span class="ph-chip">Awaiting data</span></div>`;
   return {html:`<div class="page-head"><div class="page-title">${icon}${sec.name}</div></div>${note}${body}`, specs:[]};
+}
+
+/* ---------- Operations · Master Data (ERP-style item / BOM / routing master) ----------
+   Items: finished goods are derived from the live SKU catalog (real master).
+   Components, BOM and Cycle Times are representative starter records — replace with the ERP master data. */
+const MASTER_DATA={
+  updated:'2026-06-23',
+  components:[
+    {k:'RM-FLW-IND', d:'Dried Flower · Indica',        cat:'Raw Material', uom:'g',  p:0.75},
+    {k:'RM-FLW-SAT', d:'Dried Flower · Sativa',        cat:'Raw Material', uom:'g',  p:0.75},
+    {k:'RM-DIST',    d:'Cannabis Distillate · GMP',    cat:'Raw Material', uom:'g',  p:0.60},
+    {k:'RM-RESIN',   d:'Live Resin',                   cat:'Raw Material', uom:'g',  p:1.80},
+    {k:'RM-DIAM',    d:'THCA Diamonds',                cat:'Raw Material', uom:'g',  p:2.40},
+    {k:'PK-CONE-05', d:'Pre-Roll Cone · 0.5g',         cat:'Packaging',    uom:'ea', p:0.04},
+    {k:'PK-CONE-10', d:'Pre-Roll Cone · 1.0g',         cat:'Packaging',    uom:'ea', p:0.05},
+    {k:'PK-TUBE',    d:'Pre-Roll Tube + Cap',          cat:'Packaging',    uom:'ea', p:0.09},
+    {k:'PK-POUCH',   d:'Mylar Pouch · multipack',      cat:'Packaging',    uom:'ea', p:0.07},
+    {k:'PK-CART-510',d:'510 Cartridge',                cat:'Packaging',    uom:'ea', p:0.85},
+    {k:'PK-AIO',     d:'All-In-One Vape Device',       cat:'Packaging',    uom:'ea', p:2.10},
+    {k:'PK-JAR',     d:'Glass Jar · 3.5g',             cat:'Packaging',    uom:'ea', p:0.32},
+    {k:'PK-LABEL',   d:'Compliance Label',             cat:'Packaging',    uom:'ea', p:0.02},
+    {k:'PK-CARTON',  d:'Master Carton',                cat:'Packaging',    uom:'ea', p:0.45},
+  ],
+  // each BOM parent references a real finished-goods SKU; lines = [componentCode, qtyPerUnit, scrap%]
+  bom:[
+    {fg:'PR015', lines:[['RM-FLW-SAT',0.5,3],['PK-CONE-05',1,2],['PK-TUBE',1,1],['PK-LABEL',1,0],['PK-CARTON',0.0417,0]]},
+    {fg:'PR057', lines:[['RM-FLW-IND',2.5,3],['PK-CONE-05',5,2],['PK-TUBE',5,1],['PK-POUCH',1,1],['PK-LABEL',1,0],['PK-CARTON',0.0833,0]]},
+    {fg:'PR046', lines:[['RM-FLW-IND',0.9,3],['RM-RESIN',0.15,4],['PK-CONE-10',1,2],['PK-TUBE',1,1],['PK-LABEL',1,0],['PK-CARTON',0.0833,0]]},
+    {fg:'VA069', lines:[['RM-RESIN',1.0,4],['PK-CART-510',1,1],['PK-LABEL',1,0],['PK-CARTON',0.0833,0]]},
+    {fg:'VA068', lines:[['RM-DIST',0.85,2],['RM-DIAM',0.15,2],['PK-AIO',1,1],['PK-LABEL',1,0],['PK-CARTON',0.0833,0]]},
+    {fg:'CN046', lines:[['RM-RESIN',1.0,3],['PK-JAR',1,1],['PK-LABEL',1,0],['PK-CARTON',0.1667,0]]},
+    {fg:'FL019', lines:[['RM-FLW-IND',3.5,2],['PK-JAR',1,1],['PK-LABEL',1,0],['PK-CARTON',0.1667,0]]},
+  ],
+  cycle:[
+    {op:'Milling / Grinding',    wc:'WC-MILL',  cat:'Flower · Pre-Rolls', sec:1.2, setup:30},
+    {op:'Cone Filling',          wc:'WC-PRFILL',cat:'Pre-Rolls',          sec:2.5, setup:45},
+    {op:'Infusion / Coating',    wc:'WC-INF',   cat:'Infused Pre-Rolls',  sec:4.0, setup:60},
+    {op:'Tubing / Capping',      wc:'WC-TUBE',  cat:'Pre-Rolls',          sec:1.8, setup:20},
+    {op:'Distillate Cart Fill',  wc:'WC-VFILL', cat:'Vapes',              sec:3.2, setup:50},
+    {op:'AIO Assembly',          wc:'WC-AIO',   cat:'Vapes',              sec:5.5, setup:40},
+    {op:'Cartridge Capping',     wc:'WC-CAP',   cat:'Vapes',              sec:2.0, setup:25},
+    {op:'Extract Jarring',       wc:'WC-JAR',   cat:'Extracts',           sec:3.5, setup:30},
+    {op:'Flower Packaging',      wc:'WC-FPACK', cat:'Flower',             sec:4.5, setup:35},
+    {op:'Pouching / Multipack',  wc:'WC-POUCH', cat:'Pre-Rolls',          sec:2.2, setup:20},
+    {op:'Labelling',             wc:'WC-LBL',   cat:'All categories',     sec:1.0, setup:15},
+    {op:'Cartoning / Case Pack', wc:'WC-CART',  cat:'All categories',     sec:0.8, setup:10},
+    {op:'QA Hold / Release',     wc:'WC-QA',    cat:'All categories',     sec:0,   setup:0},
+  ],
+};
+function buildMasterData(yr){
+  const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>`;
+  const money2=v=>v==null?'—':'$'+v.toFixed(2);
+  const cash=s=>`<span class="cash">${s}</span>`;
+  const comp=MASTER_DATA.components, cmap={};comp.forEach(c=>cmap[c.k]=c);
+  // ----- finished goods from the live SKU catalog -----
+  const fg=[],fgMap={};
+  if(typeof SKU_DATA!=='undefined'&&SKU_DATA[yr]){
+    TYPES.forEach(t=>{const m=SKU_DATA[yr][t.key];if(m)Object.keys(m).forEach(b=>m[b].forEach(s=>{
+      const o={k:s.k,d:s.d,cat:t.key,brand:b,u:s.u,p:s.p};fg.push(o);fgMap[s.k]=o;
+    }));});
+  }
+  fg.sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:0);
+  const bomCost=fgK=>{const b=MASTER_DATA.bom.find(x=>x.fg===fgK);if(!b)return null;let t=0;b.lines.forEach(([ck,q,sc])=>{const c=cmap[ck];if(c)t+=q*(1+(sc||0)/100)*c.p;});return t;};
+
+  // ===== Items =====
+  const nRM=comp.filter(c=>c.cat==='Raw Material').length, nPK=comp.filter(c=>c.cat==='Packaging').length;
+  const st=(v,l)=>`<div class="md-stat"><div class="md-stat-v">${v}</div><div class="md-stat-l">${l}</div></div>`;
+  const stats=`<div class="md-stats">${st(fg.length+comp.length,'Total Items')}${st(fg.length,'Finished Goods')}${st(nRM,'Raw Materials')}${st(nPK,'Packaging')}</div>`;
+  const pill=(t,cls)=>`<span class="md-pill ${cls}">${t}</span>`;
+  const fgRows=fg.map(s=>{const bc=bomCost(s.k);return `<tr><td class="md-code">${s.k}</td><td class="md-desc">${s.d}</td><td><span class="md-cat"><span class="dot" style="background:${catColor(s.cat)}"></span>${s.cat}</span></td><td>${pill('FG','fg')}</td><td class="num">ea</td><td class="num">${s.u}</td><td class="num">${cash(money2(s.p))}</td><td class="num">${bc==null?'—':cash(money2(bc))}</td></tr>`;}).join('');
+  const compRows=comp.map(c=>`<tr><td class="md-code">${c.k}</td><td class="md-desc">${c.d}</td><td><span class="md-cat">${c.cat}</span></td><td>${c.cat==='Raw Material'?pill('RM','raw'):pill('PKG','pkg')}</td><td class="num">${c.uom}</td><td class="num">—</td><td class="num">—</td><td class="num">${cash(money2(c.p))}</td></tr>`).join('');
+  const itemsTable=`<div class="md-wrap"><table class="md-table"><thead><tr><th>Item Code</th><th>Description</th><th>Category</th><th>Type</th><th class="num">UoM</th><th class="num">Units / Case</th><th class="num">List Price</th><th class="num">Std Material Cost</th></tr></thead><tbody>${fgRows}${compRows}</tbody></table></div>`;
+
+  // ===== BOM =====
+  const bomCards=MASTER_DATA.bom.map(b=>{
+    const p=fgMap[b.fg]; if(!p)return '';
+    const rows=b.lines.map(([ck,q,sc])=>{const c=cmap[ck];if(!c)return '';const ext=q*(1+(sc||0)/100)*c.p;return `<tr><td class="md-code">${c.k}</td><td class="md-desc">${c.d}</td><td><span class="md-cat">${c.cat}</span></td><td class="num">${q}</td><td class="num">${c.uom}</td><td class="num">${sc?sc+'%':'—'}</td><td class="num">${cash(money2(ext))}</td></tr>`;}).join('');
+    const tot=bomCost(b.fg);
+    return `<div class="month-card md-bom-card" style="margin-bottom:16px"><div class="mc-head"><div class="mc-name"><span class="md-code">${b.fg}</span> · ${p.d}</div><div class="badges"><span class="tb tb-vol">${b.lines.length} components</span><span class="tb tb-up">${cash(money2(tot))}/unit</span></div></div><div class="md-wrap"><table class="md-table"><thead><tr><th>Component</th><th>Description</th><th>Category</th><th class="num">Qty / Unit</th><th class="num">UoM</th><th class="num">Scrap</th><th class="num">Ext Cost</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+
+  // ===== Cycle Times =====
+  const cycRows=MASTER_DATA.cycle.map(c=>{const thr=c.sec>0?Math.round(3600/c.sec).toLocaleString():'—';return `<tr><td class="md-desc">${c.op}</td><td class="md-code">${c.wc}</td><td>${c.cat}</td><td class="num">${c.sec>0?c.sec.toFixed(1)+'s':'—'}</td><td class="num">${c.setup?c.setup+' min':'—'}</td><td class="num">${thr}</td></tr>`;}).join('');
+  const cycTable=`<div class="md-wrap"><table class="md-table"><thead><tr><th>Operation</th><th>Work Center</th><th>Applies To</th><th class="num">Cycle Time</th><th class="num">Setup</th><th class="num">Throughput /hr</th></tr></thead><tbody>${cycRows}</tbody></table></div>`;
+
+  const note=`<div class="inprog"><span class="tag">Starter Data</span><span>Finished-goods <b>Items</b> are derived from the live SKU catalog. <b>Components</b>, <b>BOM</b> and <b>Cycle Times</b> are representative starter records — replace them with your ERP master data. Last updated ${MASTER_DATA.updated}.</span></div>`;
+  const html=`<div class="page-head"><div class="page-title">${icon}Master Data</div></div>${note}`
+    +`<div class="md-sec"><div class="eyebrow">Items</div>${stats}${itemsTable}</div>`
+    +`<div class="md-sec"><div class="eyebrow">Bill of Materials</div>${bomCards}</div>`
+    +`<div class="md-sec"><div class="eyebrow">Cycle Times</div>${cycTable}</div>`;
+  return {html, specs:[]};
 }
 
 /* ---------- Planning · Flower Procurement Schedule ----------
@@ -1775,6 +1890,8 @@ function renderNav(yr,active){
       const pg='ops:'+s.key;
       html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${s.name}</span></button>`;
     });
+    html+=`<div class="nav-sec">Reference</div>`;
+    html+=`<button class="nav-item${active==='ops:masterdata'?' active':''}" data-page="ops:masterdata"><span class="ni-name">Master Data</span></button>`;
     document.getElementById('nav').innerHTML=html;
     return;
   }
