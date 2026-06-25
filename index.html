@@ -128,6 +128,13 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .pw-input:focus{border-color:var(--accent);}
 .pw-err{font-size:11px;color:var(--coral);font-family:var(--mono);margin-top:8px;height:13px;opacity:0;transition:opacity .12s;}
 .pw-err.show{opacity:1;}
+.pw-remember{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono);line-height:1.4;cursor:pointer;margin-top:2px;user-select:none;}
+.pw-remember input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;}
+.pw-remember:hover{color:var(--ink);}
+.sb-acct{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px rgba(45,190,150,.18);flex-shrink:0;}
+.sb-link{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:none;border:none;cursor:pointer;padding:4px;text-decoration:underline;text-underline-offset:2px;}
+.sb-link:hover{color:var(--ink-2);}
 .pw-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:15px;}
 .pw-actions button{font-family:var(--font);font-size:13px;font-weight:600;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);transition:background .14s,border-color .14s,color .14s,filter .14s;}
 .pw-cancel{background:transparent;color:var(--muted);}
@@ -283,6 +290,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .tb-nu{background:rgba(135,142,160,.12);color:var(--muted);}
 
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line);}
+.stat-row.stat-row-4{grid-template-columns:repeat(4,1fr);}
 .stat{background:var(--panel);padding:15px 20px;}
 .stat .k{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
 .stat .v{font-size:25px;font-weight:600;font-family:var(--mono);line-height:1;letter-spacing:-0.01em;}
@@ -515,7 +523,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
   .kpi-row,.prod-row{grid-template-columns:1fr;}
   .prod-row>.prod:last-child:nth-child(odd){grid-column:auto;justify-self:stretch;width:auto;}
   .ov-brands{grid-template-columns:repeat(2,1fr);}
-  .stat-row{grid-template-columns:1fr 1fr;}
+  .stat-row,.stat-row.stat-row-4{grid-template-columns:1fr 1fr;}
   .mrow{gap:7px;padding:11px 13px;}
   .mc-cell,.mc-month{font-size:12px;}
   .mom-2col{grid-template-columns:1fr;padding:16px 14px 18px;}
@@ -623,6 +631,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
     <div class="pw-desc">Dollar figures are hidden. Enter the password to show revenue across the dashboard.</div>
     <input class="pw-input" id="pwInput" type="password" placeholder="Password" autocomplete="off" aria-label="Password" />
     <div class="pw-err" id="pwErr">Incorrect password</div>
+    <label class="pw-remember"><input type="checkbox" id="pwRemember" />Keep revenue visible until I lock it again</label>
     <div class="pw-actions">
       <button type="button" class="pw-cancel" id="pwCancel">Cancel</button>
       <button type="button" id="pwGo" class="pw-go">Unlock</button>
@@ -630,7 +639,25 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
   </form>
 </div>
 
+<div class="pw-overlay" id="sbOverlay">
+  <form class="pw-modal" id="sbForm" autocomplete="off">
+    <div class="pw-head">
+      <span class="pw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      <span class="pw-title">Sign in to publish</span>
+    </div>
+    <div class="pw-desc">Only you can upload. Sign in once to publish new forecasts live for everyone — viewers never need to log in.</div>
+    <input class="pw-input" id="sbEmail" type="email" placeholder="Email" autocomplete="username" aria-label="Email" style="margin-bottom:9px" />
+    <input class="pw-input" id="sbPass" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password" />
+    <div class="pw-err" id="sbErr">Sign-in failed</div>
+    <div class="pw-actions">
+      <button type="button" class="pw-cancel" id="sbCancel">Cancel</button>
+      <button type="button" id="sbGo" class="pw-go">Sign in</button>
+    </div>
+  </form>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const THEME_KEY='fva-theme';
 (function(){try{const t=localStorage.getItem(THEME_KEY);if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
@@ -1070,6 +1097,29 @@ const OCS_CAT_TOK={'Pre-Rolls':'--pre','Infused Pre-Rolls':'--ipr','Vapes':'--va
 const OCS_UNIT_COST={"102875_2x1g___":5.8,"104157_10x0.5g___":15.25,"104156_1x1g___":3.43,"105643_10x0.5g___":15.25,"103719_2x1g___":5.8,"102779_10x0.5g___":15.25,"310282_1x1g___":8.52,"103717_1x0.5g___":2.44,"103236_1x1g___":3.43,"105457_10x0.5g___":15.25,"103718_1x0.5g___":2.44,"103235_1x1g___":3.43,"312005_1x1g___":9.84,"105644_10x0.5g___":15.25,"310145_1g___":16.27,"302176_1g___":16.72,"312004_1x1g___":10.14,"302004_1g___":16.72,"302174_1g___":16.72,"302003_1g___":16.72,"102875_5x1g___":13.31,"312047_1x1g___":8.37,"312374_1x1g___":8.52,"300818_1g___":16.72,"302175_1g___":16.72,"310076_1g___":15.25};
 const OCS_FCST_DEFAULT={"asOf":"2026-06-24","label":"Imported 2026-06-24","weeks":8,"items":[{"sku":"102875_2x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":9681,"oo":4260,"pipe":13941,"ord":[0,972,1704,1704,1704,1704,1704,1776],"sal":[2090,1858,1781,1703,1703,1703,1703,1703]},{"sku":"104157_10x0.5g___","name":"Strawberry OG Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7549,"oo":5604,"pipe":13153,"ord":[0,2640,2028,2040,2028,2028,1944,2028],"sal":[2207,2030,2030,2030,2030,2030,2030,1942]},{"sku":"104156_1x1g___","name":"Grape Diamonds Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7461,"oo":7392,"pipe":14853,"ord":[0,1968,1968,2160,2184,2160,2064,2064],"sal":[2447,2165,1977,1977,2165,2165,2165,2071]},{"sku":"105643_10x0.5g___","name":"Purple Haze Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":6076,"oo":8268,"pipe":14344,"ord":[0,2544,2184,2184,2184,2172,2088,2184],"sal":[2370,2181,2181,2181,2181,2181,2181,2086]},{"sku":"103719_2x1g___","name":"Big Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5942,"oo":6156,"pipe":12098,"ord":[0,1584,1620,1608,1584,1572,1560,1620],"sal":[2113,1834,1724,1623,1602,1586,1572,1561]},{"sku":"102779_10x0.5g___","name":"10th Planet Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5197,"oo":5652,"pipe":10849,"ord":[0,1488,1584,1584,1584,1584,1524,1584],"sal":[1723,1585,1585,1585,1585,1585,1585,1516]},{"sku":"310282_1x1g___","name":"8 Ball Kush Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":4126,"oo":2280,"pipe":6406,"ord":[0,1200,1320,1224,1248,1248,1248,1296],"sal":[1245,1245,1304,1304,1245,1245,1245,1245]},{"sku":"103717_1x0.5g___","name":"Lil Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":3720,"oo":3144,"pipe":6864,"ord":[0,504,1104,1200,1200,1200,1152,1152],"sal":[1359,1202,1098,1098,1202,1202,1202,1150]},{"sku":"103236_1x1g___","name":"Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2854,"oo":1728,"pipe":4582,"ord":[0,312,720,816,816,816,768,768],"sal":[917,811,741,741,811,811,811,776]},{"sku":"105457_10x0.5g___","name":"Ethos Glue Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2746,"oo":1236,"pipe":3982,"ord":[0,240,708,708,708,708,672,708],"sal":[768,707,707,707,707,707,707,676]},{"sku":"103718_1x0.5g___","name":"Lil Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2674,"oo":3240,"pipe":5914,"ord":[0,336,960,1056,1056,1056,1008,1008],"sal":[1193,1055,963,963,1055,1055,1055,1009]},{"sku":"103235_1x1g___","name":"Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2654,"oo":1704,"pipe":4358,"ord":[0,480,720,792,816,792,768,768],"sal":[904,800,730,730,800,800,800,765]},{"sku":"312005_1x1g___","name":"Rockstar Shatter Diamonds & Kief Triple Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":2288,"oo":1836,"pipe":4124,"ord":[0,912,876,840,828,840,828,876],"sal":[835,835,875,875,835,835,835,835]},{"sku":"105644_10x0.5g___","name":"Highbrid Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2035,"oo":1284,"pipe":3319,"ord":[0,240,600,600,600,600,576,600],"sal":[653,601,601,601,601,601,601,575]},{"sku":"310145_1g___","name":"RSO","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":1920,"oo":1716,"pipe":3636,"ord":[0,876,744,756,744,756,744,684],"sal":[750,750,750,750,750,750,750,750]},{"sku":"302176_1g___","name":"Sunrise Smash 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1836,"oo":144,"pipe":1980,"ord":[0,324,372,372,372,384,372,372],"sal":[373,373,373,373,373,373,373,373]},{"sku":"312004_1x1g___","name":"MAC10 Diamonds & Sauce Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1775,"oo":912,"pipe":2687,"ord":[0,468,528,528,516,528,528,480],"sal":[525,525,525,525,525,525,525,525]},{"sku":"302004_1g___","name":"Slappn' Berry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1675,"oo":372,"pipe":2047,"ord":[0,516,420,420,408,408,408,408],"sal":[439,433,427,422,418,413,409,405]},{"sku":"302174_1g___","name":"Bussn' Blackberry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":1443,"oo":0,"pipe":1443,"ord":[0,0,0,0,12,144,132,144],"sal":[165,159,154,150,146,143,140,137]},{"sku":"302003_1g___","name":"Gulupa Gulp 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1370,"oo":636,"pipe":2006,"ord":[0,276,408,396,396,396,396,300],"sal":[398,398,398,398,398,398,398,398]},{"sku":"102875_5x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":1362,"oo":876,"pipe":2238,"ord":[0,60,396,408,408,408,408,384],"sal":[391,374,374,391,408,408,408,408]},{"sku":"312047_1x1g___","name":"SLURRICANE Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1359,"oo":2220,"pipe":3579,"ord":[0,672,708,684,684,672,684,708],"sal":[679,679,711,711,679,679,679,679]},{"sku":"312374_1x1g___","name":"Pink Gas Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1029,"oo":1332,"pipe":2361,"ord":[0,216,456,444,444,444,444,456],"sal":[442,442,462,462,442,442,442,442]},{"sku":"300818_1g___","name":"HELLA BUBBA. 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":991,"oo":1524,"pipe":2515,"ord":[0,0,72,348,348,336,324,240],"sal":[393,384,374,364,354,344,335,324]},{"sku":"302175_1g___","name":"Pushn' Peach 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":918,"oo":264,"pipe":1182,"ord":[0,276,216,204,204,180,180,144],"sal":[253,242,232,220,209,197,187,175]},{"sku":"310076_1g___","name":"8 Ball Kush Shatter","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":803,"oo":1416,"pipe":2219,"ord":[0,384,432,432,432,432,420,372],"sal":[437,436,435,433,432,431,429,428]}]};
 
+/* ===================== Supabase live sync =====================
+   Public read / owner-only write. Paste your project URL + anon (public) key below.
+   The anon key is designed to be public — never paste the service_role key here.
+   While these stay blank the dashboard runs exactly as before (localStorage only). */
+const SB_URL='https://moqxkknwrpizddtbywog.supabase.co';   /* project API URL */
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vcXhra253cnBpemRkdGJ5d29nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ1ODQsImV4cCI6MjA5NzgxMDU4NH0.BtPzVs51mZSLw9WlNCQmRruZ8z1fwMGWmVDgoPuGdsM';  /* anon public key */
+const SB_BUCKET='documents';
+const SB_DATASET='ocs_forecast';
+let _sbClient=null, SB_SESSION=null, _ocsPending=null;
+function sbOn(){return !!(SB_URL&&SB_ANON&&window.supabase&&window.supabase.createClient);}
+function sb(){if(!sbOn())return null;if(!_sbClient)_sbClient=window.supabase.createClient(SB_URL,SB_ANON);return _sbClient;}
+function sbSignedIn(){return !!SB_SESSION;}
+async function sbGet(key){const c=sb();if(!c)return null;try{const{data,error}=await c.from('datasets').select('payload').eq('key',key).maybeSingle();if(error){console.warn('[sb] read:',error.message);return null;}return data?data.payload:null;}catch(e){console.warn('[sb] read:',e);return null;}}
+async function sbPut(key,payload){const c=sb();if(!c)throw new Error('not connected');const row={key,payload,label:payload.label||null,as_of:payload.asOf||null,file_name:payload.file||null,updated_at:new Date().toISOString()};const{error}=await c.from('datasets').upsert(row,{onConflict:'key'});if(error)throw error;}
+async function sbUploadFile(file){const c=sb();if(!c||!file)return null;const path=SB_DATASET+'/'+Date.now()+'_'+file.name.replace(/[^\w.\-]+/g,'_');const{error}=await c.storage.from(SB_BUCKET).upload(path,file,{upsert:true,contentType:file.type||'application/octet-stream'});if(error){console.warn('[sb] file upload:',error.message);return null;}return path;}
+async function sbSignIn(email,password){const c=sb();if(!c)throw new Error('not connected');const{error}=await c.auth.signInWithPassword({email,password});if(error)throw error;}
+async function sbSignOut(){const c=sb();if(c)await c.auth.signOut();}
+function ocsAcctHtml(){
+  if(!sbOn())return '';
+  if(SB_SESSION){const em=String(SB_SESSION.email||'signed in').replace(/[&<>"]/g,'');return `<span class="sb-acct"><span class="sb-dot"></span>Live · ${em}</span><button id="sbSignOutBtn" type="button" class="sb-link">Sign out</button>`;}
+  return `<button id="sbSignInBtn" type="button" class="sb-link">Sign in to publish</button>`;
+}
+
 function ocsLoad(){
   try{const raw=localStorage.getItem(OCS_KEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.items)&&d.items.length)return d;}}catch(e){}
   return OCS_FCST_DEFAULT;
@@ -1172,32 +1222,38 @@ function ocsBuildFromGrid(grid,fname){
   const today=new Date().toISOString().slice(0,10);
   return {asOf:today,label:'Uploaded '+today,weeks:8,items,file:fname};
 }
+async function ocsPublish(F,file){
+  try{
+    await sbUploadFile(file); // keep the raw .xlsx in storage (best-effort)
+    await sbPut(SB_DATASET,F);
+    ocsMsg={type:'ok',text:'Published live · '+F.items.length+' SKUs from '+file.name+'.'};
+  }catch(err){
+    ocsMsg={type:'err',text:'Saved on this device, but publishing live failed — '+(err&&err.message||err)+'.'};
+  }
+  showPage(curYr,'planning:fcst:ocs');
+}
 async function ocsHandleFile(input){
   const file=input.files&&input.files[0];if(!file){return;}
+  let F=null;
   try{
-    const F=ocsBuildFromGrid(await ocsParseXlsx(await file.arrayBuffer()),file.name);
+    F=ocsBuildFromGrid(await ocsParseXlsx(await file.arrayBuffer()),file.name);
     if(!F.items.length)throw new Error('no item rows found in the sheet');
     localStorage.setItem(OCS_KEY,JSON.stringify(F));
     ocsMsg={type:'ok',text:'Loaded '+F.items.length+' SKUs from '+file.name+'.'};
   }catch(err){
     ocsMsg={type:'err',text:'Could not read that file — '+(err&&err.message||err)+'.'};
+    input.value='';showPage(curYr,'planning:fcst:ocs');return;
   }
   input.value='';
+  if(sbOn()){
+    if(sbSignedIn()){await ocsPublish(F,file);return;}
+    _ocsPending={F,file};
+    ocsMsg={type:'ok',text:'Loaded on this device. Sign in to publish it live for everyone.'};
+    showPage(curYr,'planning:fcst:ocs');
+    openSb();
+    return;
+  }
   showPage(curYr,'planning:fcst:ocs');
-}
-function makeOcsWeeks(s){
-  return new Chart(document.getElementById(s.cid),{
-    type:'bar',
-    data:{labels:s.labels,datasets:[
-      {label:'Order forecast',data:s.ord,backgroundColor:hexA(s.oc,.85),borderColor:s.oc,borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:30},
-      {label:'Sales forecast',data:s.sal,backgroundColor:hexA(s.sc,.28),borderColor:hexA(s.sc,.6),borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:30}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10,family:"'DM Mono',monospace"},color:tickC,boxWidth:9,boxHeight:9,padding:14,usePointStyle:true,pointStyle:'rectRounded'}},
-        tooltip:{...tipBase,callbacks:{title:c=>{const l=s.labels[c[0].dataIndex];return Array.isArray(l)?l.join(' · '):l;},label:c=>` ${c.dataset.label}: ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} units`}}},
-      scales:{x:{ticks:{font:tickF,color:tickC},grid:{display:false},border:{color:axisC}},
-              y:{beginAtZero:true,ticks:{callback:v=>fmtK(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
-  });
 }
 function buildForecast(yr,key){
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/></svg>`;
@@ -1216,9 +1272,7 @@ function buildForecast(yr,key){
   const _asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
   const _w1Mon=new Date(_asOfD);_w1Mon.setDate(_w1Mon.getDate()-((_w1Mon.getDay()+6)%7));
   const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(_w1Mon);d.setDate(d.getDate()+i*7);return _MON[d.getMonth()]+' '+d.getDate();});
-  const cid='ocs-weeks';
-  const specs=[{cid,kind:'ocsw',labels:wkLab.map((w,i)=>[w,wkDates[i]]),ord:A.wk.ord,sal:A.wk.sal,oc:cssVar('--accent'),sc:cssVar('--teal')}];
-  let pk=0;for(let i=1;i<W;i++)if(A.wk.ord[i]>A.wk.ord[pk])pk=i;
+  const specs=[];
 
   const title=`OCS<small style="font-weight:500;color:var(--muted);margin-left:9px;letter-spacing:0">Ontario Cannabis Store · DC001 · ${W}-week order &amp; sales forecast</small>`;
   const upIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
@@ -1226,6 +1280,7 @@ function buildForecast(yr,key){
   const head=`<div class="page-head"><div class="page-title">${icon}${title}</div>
     <div class="head-right" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
       <span class="tb tb-nu">${_e(F.label)}${F.file?' · '+_e(F.file):''}</span>
+      ${ocsAcctHtml()}
       <button id="ocsUpBtn" type="button" style="${btnCss}">${upIcon}Upload</button>
       ${F.file?`<button id="ocsResetBtn" type="button" title="Revert to the built-in forecast" style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);background:none;border:none;cursor:pointer;padding:4px">Reset</button>`:''}
       <input type="file" id="ocsFileInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
@@ -1234,23 +1289,18 @@ function buildForecast(yr,key){
   const msg=ocsMsg?`<div class="inprog" style="margin-bottom:18px;${ocsMsg.type==='err'?'border-color:var(--coral)':'border-color:var(--teal)'}"><span class="tag" style="color:${ocsMsg.type==='err'?'var(--coral)':'var(--teal)'};background:${ocsMsg.type==='err'?'rgba(240,90,90,.14)':'rgba(45,190,150,.14)'}">${ocsMsg.type==='err'?'Error':'Loaded'}</span><span>${_e(ocsMsg.text)}</span></div>`:'';
   ocsMsg=null;
 
-  const stats=`<div class="stat-row">
-    <div class="stat"><div class="k">8-wk Order Forecast</div><div class="v teal">${fmtN(A.tot.ord8)}</div><div class="s">units OCS plans to order</div></div>
-    <div class="stat"><div class="k">8-wk Order Value</div><div class="v" style="color:var(--accent)">${fmtMoneyK(A.tot.rev8)}</div><div class="s">order units × landed cost</div></div>
-    <div class="stat"><div class="k">8-wk Sales Forecast</div><div class="v" style="color:var(--accent)">${fmtN(A.tot.sal8)}</div><div class="s">projected sell-through</div></div>
-    <div class="stat"><div class="k">On Hand</div><div class="v">${fmtN(A.tot.oh)}</div><div class="s">units at DC001</div></div>
-    <div class="stat"><div class="k">On Order</div><div class="v lav">${fmtN(A.tot.oo)}</div><div class="s">open purchase orders</div></div>
-    <div class="stat"><div class="k">Current Pipe</div><div class="v amber">${fmtN(A.tot.pipe)}</div><div class="s">on-hand + on-order</div></div>
-    <div class="stat"><div class="k">Active SKUs</div><div class="v">${fmtN(A.tot.n)}</div><div class="s">${A.cats.length} categories</div></div>
-  </div>`;
+  const stats=`<div class="stat-row stat-row-4">${
+    Array.from({length:Math.min(4,W)},(_,i)=>
+      `<div class="stat"><div class="k">${wkLab[i]} · ${wkDates[i]}</div><div class="v" style="color:var(--accent)">${fmtMoneyK(A.wk.rev[i])}</div><div class="s">${fmtN(A.wk.ord[i])} order units</div></div>`
+    ).join('')
+  }</div>`;
 
   const chartCard=`<div class="month-card collapsible">
     <div class="mc-head" role="button" tabindex="0" aria-expanded="true">
-      <div class="mc-name"><span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span><span class="dot" style="background:var(--accent)"></span>Weekly Order vs Sales Forecast</div>
-      <div class="badges"><span class="tb tb-vol">${fmtN(A.tot.ord8)} order units</span><span class="tb tb-nu">peak ${wkLab[pk]}</span></div>
+      <div class="mc-name"><span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span><span class="dot" style="background:var(--accent)"></span>${W}-Week Forecast Summary</div>
+      <div class="badges"><span class="tb tb-vol">${fmtN(A.tot.ord8)} order units</span></div>
     </div>
-    <div class="cat-collapse">${stats}
-    <div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="${cid}" role="img" aria-label="Weekly OCS order and sales forecast totals"></canvas></div></div></div>
+    <div class="cat-collapse">${stats}</div>
   </div>`;
 
   const GC=`minmax(0,1.4fr) repeat(${W},.78fr) .82fr 1fr`;
@@ -2227,7 +2277,7 @@ function showPage(yr,page){
   const main=document.getElementById('main');
   const r= page==='overview'?buildOverview(yr):page==='skurank'?buildSkuRank(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:fcst:'?buildForecast(yr,page.slice(14)):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
   main.innerHTML=r.html;
-  (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):s.kind==='ocsw'?makeOcsWeeks(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
+  (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
   document.querySelectorAll('#nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   curPage=page;
   if(isOpsPage(page))lastOps=page; else if(isPlanningPage(page))lastPlanning=page; else lastSales=page;
@@ -2281,7 +2331,9 @@ function render(yr){
 let curYr='2026',curPage='overview',selMonth=null,cmpMode='mom',skuRankMetric='rev',skuRankPeriod='mon',skuRankGroup='brand';
 const skuRankFilter=new Set();
 let lastSales='overview',lastOps='ops:'+OPS_SECTIONS[0].key,lastPlanning='planning:fcst:'+FORECAST_CUSTOMERS[0].key; // remember the last page visited in each mode so the switch returns you there
+const CASH_UNLOCK_KEY='cash_unlock_v1';
 let CASH_LOCKED=true;
+try{if(localStorage.getItem(CASH_UNLOCK_KEY)==='1')CASH_LOCKED=false;}catch(e){}
 const CASH_PASSWORD='Mera2026';
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('#yrGroup .seg[data-yr]');
@@ -2312,6 +2364,8 @@ document.getElementById('nav').addEventListener('click',e=>{
 // OCS forecast: weekly .xlsx upload + reset (parsed client-side, cached in localStorage)
 document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('#ocsUpBtn')){const fi=document.getElementById('ocsFileInput');if(fi)fi.click();return;}
+  if(e.target.closest&&e.target.closest('#sbSignInBtn')){openSb();return;}
+  if(e.target.closest&&e.target.closest('#sbSignOutBtn')){sbSignOut();return;}
   if(e.target.closest&&e.target.closest('#ocsResetBtn')){try{localStorage.removeItem(OCS_KEY);}catch(_){}ocsMsg={type:'ok',text:'Reverted to the built-in forecast.'};showPage(curYr,'planning:fcst:ocs');return;}
   const cr=e.target.closest&&e.target.closest('.ocs-cat-row');
   if(cr){
@@ -2434,15 +2488,16 @@ const pwInput=document.getElementById('pwInput');
 const pwErr=document.getElementById('pwErr');
 const pwCancel=document.getElementById('pwCancel');
 const pwGo=document.getElementById('pwGo');
+const pwRemember=document.getElementById('pwRemember');
 function paintCashIcon(){if(!cashBtn)return;cashBtn.innerHTML='<span class="cash-dollar">$</span>'+(CASH_LOCKED?LOCK_SVG:UNLOCK_SVG);cashBtn.title=CASH_LOCKED?'Reveal $ amounts':'Hide $ amounts';cashBtn.setAttribute('aria-label',CASH_LOCKED?'Reveal dollar amounts':'Hide dollar amounts');}
 function applyCashLock(){document.body.classList.toggle('cash-lock',CASH_LOCKED);paintCashIcon();}
-function openPw(){if(!pwOverlay)return;if(pwErr)pwErr.classList.remove('show');if(pwInput)pwInput.value='';pwOverlay.classList.add('open');setTimeout(()=>{if(pwInput)pwInput.focus();},60);}
+function openPw(){if(!pwOverlay)return;if(pwErr)pwErr.classList.remove('show');if(pwInput)pwInput.value='';if(pwRemember){let r=false;try{r=localStorage.getItem(CASH_UNLOCK_KEY)==='1';}catch(e){}pwRemember.checked=r;}pwOverlay.classList.add('open');setTimeout(()=>{if(pwInput)pwInput.focus();},60);}
 function closePw(){if(pwOverlay)pwOverlay.classList.remove('open');}
-if(cashBtn)cashBtn.addEventListener('click',()=>{if(CASH_LOCKED){openPw();}else{CASH_LOCKED=true;applyCashLock();}});
+if(cashBtn)cashBtn.addEventListener('click',()=>{if(CASH_LOCKED){openPw();}else{CASH_LOCKED=true;applyCashLock();try{localStorage.removeItem(CASH_UNLOCK_KEY);}catch(e){}}});
 if(pwCancel)pwCancel.addEventListener('click',closePw);
 if(pwOverlay)pwOverlay.addEventListener('click',e=>{if(e.target===pwOverlay)closePw();});
 function tryUnlock(){
-  if(pwInput&&pwInput.value===CASH_PASSWORD){CASH_LOCKED=false;applyCashLock();closePw();}
+  if(pwInput&&pwInput.value===CASH_PASSWORD){CASH_LOCKED=false;applyCashLock();closePw();try{if(pwRemember&&pwRemember.checked)localStorage.setItem(CASH_UNLOCK_KEY,'1');else localStorage.removeItem(CASH_UNLOCK_KEY);}catch(e){}}
   else{pwForm.classList.remove('shake');void pwForm.offsetWidth;pwForm.classList.add('shake');if(pwErr)pwErr.classList.add('show');if(pwInput){pwInput.value='';pwInput.focus();}}
 }
 if(pwGo)pwGo.addEventListener('click',tryUnlock);
@@ -2450,6 +2505,35 @@ if(pwInput)pwInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventD
 if(pwForm)pwForm.addEventListener('submit',e=>{e.preventDefault();tryUnlock();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pwOverlay&&pwOverlay.classList.contains('open'))closePw();});
 applyCashLock();
+
+/* ---------- Supabase uploader sign-in modal ---------- */
+const sbOverlay=document.getElementById('sbOverlay');
+const sbForm=document.getElementById('sbForm');
+const sbEmail=document.getElementById('sbEmail');
+const sbPass=document.getElementById('sbPass');
+const sbErr=document.getElementById('sbErr');
+const sbCancel=document.getElementById('sbCancel');
+const sbGo=document.getElementById('sbGo');
+function openSb(){if(!sbOverlay)return;if(sbErr)sbErr.classList.remove('show');sbOverlay.classList.add('open');setTimeout(()=>{if(sbEmail&&!sbEmail.value)sbEmail.focus();else if(sbPass)sbPass.focus();},60);}
+function closeSb(){if(sbOverlay)sbOverlay.classList.remove('open');}
+async function trySb(){
+  if(!sbEmail||!sbPass)return;
+  try{
+    await sbSignIn(sbEmail.value.trim(),sbPass.value);
+    sbPass.value='';closeSb();
+    if(_ocsPending){const p=_ocsPending;_ocsPending=null;await ocsPublish(p.F,p.file);}
+  }catch(err){
+    if(sbForm){sbForm.classList.remove('shake');void sbForm.offsetWidth;sbForm.classList.add('shake');}
+    if(sbErr){sbErr.textContent=(err&&err.message)||'Sign-in failed';sbErr.classList.add('show');}
+    if(sbPass){sbPass.value='';sbPass.focus();}
+  }
+}
+if(sbGo)sbGo.addEventListener('click',trySb);
+if(sbForm)sbForm.addEventListener('submit',e=>{e.preventDefault();trySb();});
+if(sbCancel)sbCancel.addEventListener('click',()=>{_ocsPending=null;closeSb();});
+if(sbOverlay)sbOverlay.addEventListener('click',e=>{if(e.target===sbOverlay){_ocsPending=null;closeSb();}});
+if(sbPass)sbPass.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();trySb();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sbOverlay&&sbOverlay.classList.contains('open')){_ocsPending=null;closeSb();}});
 
 /* ---------- SKU drill-down modal ---------- */
 const skuOv=document.createElement('div');
@@ -2521,7 +2605,7 @@ function _esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 // Cell renderers. Money is redacted to '•••' while the cash lock is on.
 function fmtCellXlsx(v,fmt){
   if(v==null||v==='')return '';
-  if(fmt==='money')return CASH_LOCKED?'•••':{v:Math.round(v),t:'n'};
+  if(fmt==='money')return CASH_LOCKED?'•••':{v:Math.round(v),t:'n',s:1}; // s=1 → currency cell style in styles.xml
   if(fmt==='int')return {v:Math.round(v),t:'n'};
   if(fmt==='pct')return (v>=0?'+':'')+Math.round(v)+'%';
   return String(v);
@@ -2594,22 +2678,22 @@ function ocsForecastExportModel(){
   const w1Mon=new Date(asOfD);w1Mon.setDate(w1Mon.getDate()-((w1Mon.getDay()+6)%7));
   const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(w1Mon);d.setDate(d.getDate()+i*7);return MON[d.getMonth()]+' '+d.getDate();});
   const cols=[{label:'Category / Item',fmt:'text'}];
-  for(let w=0;w<W;w++)cols.push({label:'W'+(w+1)+' units · '+wkDates[w],fmt:'int'});
+  for(let w=0;w<W;w++){cols.push({label:'W'+(w+1)+' units · '+wkDates[w],fmt:'int'});cols.push({label:'W'+(w+1)+' $ · '+wkDates[w],fmt:'money'});} // units paired next to revenue for each week
   cols.push({label:'8-wk Units',fmt:'int'});
-  for(let w=0;w<W;w++)cols.push({label:'W'+(w+1)+' $ · '+wkDates[w],fmt:'money'});
   cols.push({label:'Order Value ($)',fmt:'money'});
+  const interleave=(label,units,rev,uTot,rTot)=>{const row=[label];for(let w=0;w<W;w++){row.push(units[w],rev[w]);}row.push(uTot,rTot);return row;};
   const rows=[];
   A.cats.forEach(cc=>{
-    rows.push([cc.cat,...cc.ord,cc.ord8,...cc.rev,cc.rev8]);
+    rows.push(interleave(cc.cat,cc.ord,cc.rev,cc.ord8,cc.rev8));
     F.items.filter(it=>it.cat===cc.cat)
       .map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0)}))
       .sort((a,b)=>b.o8-a.o8)
       .forEach(it=>{
         const uc=OCS_UNIT_COST[it.sku]||0;
-        rows.push(['    '+it.name+' — '+it.sku,...it.ord,it.o8,...it.ord.map(v=>v*uc),it.o8*uc]);
+        rows.push(interleave('    '+it.name+' — '+it.sku,it.ord,it.ord.map(v=>v*uc),it.o8,it.o8*uc));
       });
   });
-  const totals=[['Total · '+A.tot.n+' SKUs',...A.wk.ord,A.tot.ord8,...A.wk.rev,A.tot.rev8]];
+  const totals=[interleave('Total · '+A.tot.n+' SKUs',A.wk.ord,A.wk.rev,A.tot.ord8,A.tot.rev8)];
   return {title:'OCS · Order Forecast by Category & Week',
     subtitle:'DC001 · '+W+'-week order & sales forecast · '+(F.label||'')+(F.file?' · '+F.file:''),
     filename:'Mera_OCS_Order-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
@@ -2632,10 +2716,17 @@ function _download(blob,name){
 }
 function exportExcel(){
   const model=currentExportModel(); if(!model)return;
+  const HDR=4; // 0-based row index of the column-label header (after title / source / date / blank)
   const aoa=[[model.title],['Source: Mera Cannabis · Forecast vs Actual'+(CASH_LOCKED?' · $ hidden (•••)':'')],['Exported '+new Date().toISOString().slice(0,10)],[],model.cols.map(c=>c.label)];
   model.rows.forEach(r=>aoa.push(r.map((v,ci)=>fmtCellXlsx(v,model.cols[ci].fmt))));
   (model.totals||[]).forEach(r=>aoa.push(r.map((v,ci)=>fmtCellXlsx(v,model.cols[ci].fmt))));
-  const bytes=buildXlsx(aoa,model.sheet);
+  // Right-size each column from its header + body content.
+  const colWidths=model.cols.map((c,ci)=>{
+    let mx=0;
+    for(let r=HDR;r<aoa.length;r++){const cell=aoa[r]&&aoa[r][ci];if(cell==null||cell==='')continue;const s=(typeof cell==='object')?String(cell.v):String(cell);if(s.length>mx)mx=s.length;}
+    return Math.min(Math.max(mx+2,ci===0?16:7),ci===0?46:24);
+  });
+  const bytes=buildXlsx(aoa,model.sheet,{colWidths});
   _download(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),model.filename+'.xlsx');
 }
 function renderPrintArea(model){
@@ -2674,19 +2765,25 @@ function _x_colName(i){let s='';i++;while(i>0){let r=(i-1)%26;s=String.fromCharC
 function _x_crc32(u8){let c,crc=0xFFFFFFFF;for(let n=0;n<u8.length;n++){c=(crc^u8[n])&0xFF;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);crc=(crc>>>8)^c;}return (crc^0xFFFFFFFF)>>>0;}
 function _x_cellXml(ref,cell){
   if(cell==null||cell==='')return '<c r="'+ref+'"/>';
-  const isNum=(typeof cell==='object')?cell.t==='n':(typeof cell==='number');
-  const val=(typeof cell==='object')?cell.v:cell;
-  if(isNum)return '<c r="'+ref+'"><v>'+val+'</v></c>';
-  return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+_x_xmlEsc(val)+'</t></is></c>';
+  const obj=(typeof cell==='object');
+  const isNum=obj?cell.t==='n':(typeof cell==='number');
+  const val=obj?cell.v:cell;
+  const sAttr=(obj&&cell.s)?' s="'+cell.s+'"':'';
+  if(isNum)return '<c r="'+ref+'"'+sAttr+'><v>'+val+'</v></c>';
+  return '<c r="'+ref+'"'+sAttr+' t="inlineStr"><is><t xml:space="preserve">'+_x_xmlEsc(val)+'</t></is></c>';
 }
-function _x_sheetXml(aoa){
+function _x_sheetXml(aoa,opts){
+  opts=opts||{};
   let rows='';
   for(let r=0;r<aoa.length;r++){
     let cells='';
     for(let ci=0;ci<aoa[r].length;ci++)cells+=_x_cellXml(_x_colName(ci)+(r+1),aoa[r][ci]);
     rows+='<row r="'+(r+1)+'">'+cells+'</row>';
   }
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+rows+'</sheetData></worksheet>';
+  const cols=(opts.colWidths&&opts.colWidths.length)
+    ? '<cols>'+opts.colWidths.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+(Math.round(w*100)/100)+'" customWidth="1"/>').join('')+'</cols>'
+    : '';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+cols+'<sheetData>'+rows+'</sheetData></worksheet>';
 }
 function _x_zip(files){
   const chunks=[],central=[]; let offset=0;
@@ -2708,23 +2805,42 @@ function _x_zip(files){
   for(const c of chunks){out.set(c,p);p+=c.length;}
   return out;
 }
-function buildXlsx(aoa,sheetName){
+function buildXlsx(aoa,sheetName,opts){
+  opts=opts||{};
   sheetName=(sheetName||'Sheet1').slice(0,31).replace(/[\\\/\?\*\[\]:]/g,'_');
-  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
   const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
   const workbook='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+_x_xmlEsc(sheetName)+'" sheetId="1" r:id="rId1"/></sheets></workbook>';
-  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  // styles: cellXfs index 0 = default, index 1 = whole-dollar currency ("$"#,##0) for money columns
+  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0"/></numFmts><fonts count="1"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
   return _x_zip([
     {name:'[Content_Types].xml',data:_x_u8(contentTypes)},
     {name:'_rels/.rels',data:_x_u8(rels)},
     {name:'xl/workbook.xml',data:_x_u8(workbook)},
     {name:'xl/_rels/workbook.xml.rels',data:_x_u8(wbRels)},
-    {name:'xl/worksheets/sheet1.xml',data:_x_u8(_x_sheetXml(aoa))}
+    {name:'xl/styles.xml',data:_x_u8(styles)},
+    {name:'xl/worksheets/sheet1.xml',data:_x_u8(_x_sheetXml(aoa,opts))}
   ]);
 }
 
 {const _es=document.getElementById('exportSlot');if(_es)_es.innerHTML=exportBox();}
 render('2026');
+
+/* ---------- Supabase boot: hydrate latest data for everyone + track uploader session ---------- */
+(function sbBoot(){
+  if(!sbOn())return;
+  const c=sb();
+  const reOcs=()=>{if(curPage==='planning:fcst:ocs')showPage(curYr,'planning:fcst:ocs');};
+  c.auth.getSession().then(({data})=>{SB_SESSION=(data&&data.session)?{email:data.session.user.email}:null;reOcs();}).catch(()=>{});
+  c.auth.onAuthStateChange((_evt,session)=>{SB_SESSION=session?{email:session.user.email}:null;reOcs();});
+  sbGet(SB_DATASET).then(payload=>{
+    if(payload&&Array.isArray(payload.items)&&payload.items.length){
+      try{localStorage.setItem(OCS_KEY,JSON.stringify(payload));}catch(e){}
+      reOcs();
+    }
+  });
+})();
 </script>
 </body>
 </html>
