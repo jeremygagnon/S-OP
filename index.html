@@ -311,6 +311,16 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .skf-d small{font-size:10px;color:var(--faint);font-family:var(--mono);font-weight:400;letter-spacing:0.02em;}
 .skf-tot{border-top:1.5px solid var(--line);}
 .skf-tot .mc-month{color:var(--muted);font-weight:600;}
+/* OCS category drill-down — click a category row to reveal its SKUs */
+.ocs-cat-row{cursor:pointer;transition:background .12s;}
+.ocs-cat-row:hover{background:color-mix(in srgb,var(--teal) 7%,transparent);}
+.ocs-cat-row.open{background:color-mix(in srgb,var(--teal) 5%,transparent);}
+.ocs-chev{display:inline-block;width:10px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--faint);transition:transform .15s;}
+.ocs-cat-row.open .ocs-chev{transform:rotate(90deg);color:var(--teal);}
+.ocs-item-row{background:color-mix(in srgb,var(--ink) 3%,transparent);}
+.ocs-item-row .mc-month{font-weight:500;padding-left:26px;}
+.ocs-item-row .mc-cell{font-size:13px;color:var(--muted);}
+.ocs-item-row .mc-cell.teal{color:var(--teal);}
 /* day-by-day production schedule */
 .sched-day{margin-top:18px;}
 .sched-day:first-of-type{margin-top:0;}
@@ -1024,6 +1034,10 @@ const OPS_SECTIONS=[
 const PLANNING_SECTIONS=[
   {key:'flower',name:'Flower Procurement Schedule'},
 ];
+/* Recreational-customer forecasts (Planning · Forecast). OCS first; AGLC/MBLL/etc. drop in here. */
+const FORECAST_CUSTOMERS=[
+  {key:'ocs',name:'OCS',full:'Ontario Cannabis Store',prov:'Ontario'},
+];
 const PROD_SITES=[
   {key:'countryside',name:'Countryside'},
   {key:'greenleaf',name:'Greenleaf'},
@@ -1041,6 +1055,269 @@ function buildOperations(yr,page){
   const note=`<div class="inprog"><span class="tag">Building</span><span>Operations data is being prepared — this section is a placeholder and will populate once the underlying data is loaded.</span></div>`;
   const body=`<div class="ops-ph"><div class="ph-d">${sec.desc}</div><span class="ph-chip">Awaiting data</span></div>`;
   return {html:`<div class="page-head"><div class="page-title">${icon}${sec.name}</div></div>${note}${body}`, specs:[]};
+}
+
+/* ---------- Planning · Forecast · Recreational customer (OCS, …) ----------
+   OCS shows the item-level 8-week Order & Sales Forecast (DC001 export). The user
+   re-uploads a fresh .xlsx each week from the page; it's parsed in-browser (no
+   external lib — manual ZIP read + DecompressionStream) and cached in localStorage.
+   OCS_FCST_DEFAULT is the baked-in fall-back so the page is never empty. Other
+   customers (AGLC/MBLL/…) stay scaffolded until their feed is wired in. */
+const OCS_KEY='ocs_forecast_v1';
+let ocsMsg=null;
+const OCS_CAT_TOK={'Pre-Rolls':'--pre','Infused Pre-Rolls':'--ipr','Vapes':'--vape','Extracts':'--ext','Flower':'--flower'};
+/* Per-unit landed cost by OCS SKU — from the PO Master Tracker (col B Provincial SKU → col P Landed Cost, latest PO). Drives the $ columns on the OCS forecast. */
+const OCS_UNIT_COST={"102875_2x1g___":5.8,"104157_10x0.5g___":15.25,"104156_1x1g___":3.43,"105643_10x0.5g___":15.25,"103719_2x1g___":5.8,"102779_10x0.5g___":15.25,"310282_1x1g___":8.52,"103717_1x0.5g___":2.44,"103236_1x1g___":3.43,"105457_10x0.5g___":15.25,"103718_1x0.5g___":2.44,"103235_1x1g___":3.43,"312005_1x1g___":9.84,"105644_10x0.5g___":15.25,"310145_1g___":16.27,"302176_1g___":16.72,"312004_1x1g___":10.14,"302004_1g___":16.72,"302174_1g___":16.72,"302003_1g___":16.72,"102875_5x1g___":13.31,"312047_1x1g___":8.37,"312374_1x1g___":8.52,"300818_1g___":16.72,"302175_1g___":16.72,"310076_1g___":15.25};
+const OCS_FCST_DEFAULT={"asOf":"2026-06-24","label":"Imported 2026-06-24","weeks":8,"items":[{"sku":"102875_2x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":9681,"oo":4260,"pipe":13941,"ord":[0,972,1704,1704,1704,1704,1704,1776],"sal":[2090,1858,1781,1703,1703,1703,1703,1703]},{"sku":"104157_10x0.5g___","name":"Strawberry OG Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7549,"oo":5604,"pipe":13153,"ord":[0,2640,2028,2040,2028,2028,1944,2028],"sal":[2207,2030,2030,2030,2030,2030,2030,1942]},{"sku":"104156_1x1g___","name":"Grape Diamonds Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7461,"oo":7392,"pipe":14853,"ord":[0,1968,1968,2160,2184,2160,2064,2064],"sal":[2447,2165,1977,1977,2165,2165,2165,2071]},{"sku":"105643_10x0.5g___","name":"Purple Haze Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":6076,"oo":8268,"pipe":14344,"ord":[0,2544,2184,2184,2184,2172,2088,2184],"sal":[2370,2181,2181,2181,2181,2181,2181,2086]},{"sku":"103719_2x1g___","name":"Big Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5942,"oo":6156,"pipe":12098,"ord":[0,1584,1620,1608,1584,1572,1560,1620],"sal":[2113,1834,1724,1623,1602,1586,1572,1561]},{"sku":"102779_10x0.5g___","name":"10th Planet Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5197,"oo":5652,"pipe":10849,"ord":[0,1488,1584,1584,1584,1584,1524,1584],"sal":[1723,1585,1585,1585,1585,1585,1585,1516]},{"sku":"310282_1x1g___","name":"8 Ball Kush Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":4126,"oo":2280,"pipe":6406,"ord":[0,1200,1320,1224,1248,1248,1248,1296],"sal":[1245,1245,1304,1304,1245,1245,1245,1245]},{"sku":"103717_1x0.5g___","name":"Lil Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":3720,"oo":3144,"pipe":6864,"ord":[0,504,1104,1200,1200,1200,1152,1152],"sal":[1359,1202,1098,1098,1202,1202,1202,1150]},{"sku":"103236_1x1g___","name":"Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2854,"oo":1728,"pipe":4582,"ord":[0,312,720,816,816,816,768,768],"sal":[917,811,741,741,811,811,811,776]},{"sku":"105457_10x0.5g___","name":"Ethos Glue Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2746,"oo":1236,"pipe":3982,"ord":[0,240,708,708,708,708,672,708],"sal":[768,707,707,707,707,707,707,676]},{"sku":"103718_1x0.5g___","name":"Lil Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2674,"oo":3240,"pipe":5914,"ord":[0,336,960,1056,1056,1056,1008,1008],"sal":[1193,1055,963,963,1055,1055,1055,1009]},{"sku":"103235_1x1g___","name":"Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2654,"oo":1704,"pipe":4358,"ord":[0,480,720,792,816,792,768,768],"sal":[904,800,730,730,800,800,800,765]},{"sku":"312005_1x1g___","name":"Rockstar Shatter Diamonds & Kief Triple Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":2288,"oo":1836,"pipe":4124,"ord":[0,912,876,840,828,840,828,876],"sal":[835,835,875,875,835,835,835,835]},{"sku":"105644_10x0.5g___","name":"Highbrid Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2035,"oo":1284,"pipe":3319,"ord":[0,240,600,600,600,600,576,600],"sal":[653,601,601,601,601,601,601,575]},{"sku":"310145_1g___","name":"RSO","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":1920,"oo":1716,"pipe":3636,"ord":[0,876,744,756,744,756,744,684],"sal":[750,750,750,750,750,750,750,750]},{"sku":"302176_1g___","name":"Sunrise Smash 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1836,"oo":144,"pipe":1980,"ord":[0,324,372,372,372,384,372,372],"sal":[373,373,373,373,373,373,373,373]},{"sku":"312004_1x1g___","name":"MAC10 Diamonds & Sauce Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1775,"oo":912,"pipe":2687,"ord":[0,468,528,528,516,528,528,480],"sal":[525,525,525,525,525,525,525,525]},{"sku":"302004_1g___","name":"Slappn' Berry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1675,"oo":372,"pipe":2047,"ord":[0,516,420,420,408,408,408,408],"sal":[439,433,427,422,418,413,409,405]},{"sku":"302174_1g___","name":"Bussn' Blackberry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":1443,"oo":0,"pipe":1443,"ord":[0,0,0,0,12,144,132,144],"sal":[165,159,154,150,146,143,140,137]},{"sku":"302003_1g___","name":"Gulupa Gulp 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1370,"oo":636,"pipe":2006,"ord":[0,276,408,396,396,396,396,300],"sal":[398,398,398,398,398,398,398,398]},{"sku":"102875_5x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":1362,"oo":876,"pipe":2238,"ord":[0,60,396,408,408,408,408,384],"sal":[391,374,374,391,408,408,408,408]},{"sku":"312047_1x1g___","name":"SLURRICANE Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1359,"oo":2220,"pipe":3579,"ord":[0,672,708,684,684,672,684,708],"sal":[679,679,711,711,679,679,679,679]},{"sku":"312374_1x1g___","name":"Pink Gas Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1029,"oo":1332,"pipe":2361,"ord":[0,216,456,444,444,444,444,456],"sal":[442,442,462,462,442,442,442,442]},{"sku":"300818_1g___","name":"HELLA BUBBA. 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":991,"oo":1524,"pipe":2515,"ord":[0,0,72,348,348,336,324,240],"sal":[393,384,374,364,354,344,335,324]},{"sku":"302175_1g___","name":"Pushn' Peach 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":918,"oo":264,"pipe":1182,"ord":[0,276,216,204,204,180,180,144],"sal":[253,242,232,220,209,197,187,175]},{"sku":"310076_1g___","name":"8 Ball Kush Shatter","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":803,"oo":1416,"pipe":2219,"ord":[0,384,432,432,432,432,420,372],"sal":[437,436,435,433,432,431,429,428]}]};
+
+function ocsLoad(){
+  try{const raw=localStorage.getItem(OCS_KEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.items)&&d.items.length)return d;}}catch(e){}
+  return OCS_FCST_DEFAULT;
+}
+function ocsAgg(F){
+  const W=F.weeks||8;
+  const wk={ord:Array(W).fill(0),sal:Array(W).fill(0),rev:Array(W).fill(0)};
+  const tot={n:F.items.length,oh:0,oo:0,pipe:0,ord8:0,sal8:0,rev8:0,srev8:0};
+  const cmap={};
+  F.items.forEach(it=>{
+    const o8=(it.ord||[]).reduce((a,v)=>a+(v||0),0),s8=(it.sal||[]).reduce((a,v)=>a+(v||0),0);
+    const uc=OCS_UNIT_COST[it.sku]||0,orev=o8*uc,srev=s8*uc;
+    tot.oh+=it.oh||0;tot.oo+=it.oo||0;tot.pipe+=it.pipe||0;tot.ord8+=o8;tot.sal8+=s8;tot.rev8+=orev;tot.srev8+=srev;
+    for(let w=0;w<W;w++){wk.ord[w]+=it.ord[w]||0;wk.sal[w]+=it.sal[w]||0;wk.rev[w]+=(it.ord[w]||0)*uc;}
+    const c=cmap[it.cat]||(cmap[it.cat]={cat:it.cat,n:0,oh:0,oo:0,pipe:0,ord:Array(W).fill(0),sal:Array(W).fill(0),rev:Array(W).fill(0),ord8:0,sal8:0,rev8:0,srev8:0});
+    c.n++;c.oh+=it.oh||0;c.oo+=it.oo||0;c.pipe+=it.pipe||0;c.ord8+=o8;c.sal8+=s8;c.rev8+=orev;c.srev8+=srev;
+    for(let w=0;w<W;w++){c.ord[w]+=it.ord[w]||0;c.sal[w]+=it.sal[w]||0;c.rev[w]+=(it.ord[w]||0)*uc;}
+  });
+  const ord=['Pre-Rolls','Infused Pre-Rolls','Vapes','Extracts','Flower'];
+  const cats=Object.values(cmap).sort((a,b)=>{const ia=ord.indexOf(a.cat),ib=ord.indexOf(b.cat);return (ia<0?99:ia)-(ib<0?99:ib)||b.ord8-a.ord8;});
+  return {wk,tot,cats,W};
+}
+/* ---- pure-browser .xlsx reader (manual ZIP central-directory walk + DecompressionStream) ---- */
+function ocsColIdx(col){let c=0;for(const ch of col)c=c*26+(ch.charCodeAt(0)-64);return c-1;}
+async function ocsInflate(bytes){
+  if(typeof DecompressionStream==='undefined')throw new Error('this browser cannot unzip .xlsx (no DecompressionStream)');
+  const ab=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  return new Uint8Array(ab);
+}
+async function ocsUnzip(buf){
+  const u8=new Uint8Array(buf),dv=new DataView(buf);
+  let eo=-1;for(let i=u8.length-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eo=i;break;}}
+  if(eo<0)throw new Error('not a valid .xlsx (zip end-of-directory not found)');
+  const cnt=dv.getUint16(eo+10,true),off=dv.getUint32(eo+16,true);
+  const files={};let p=off;
+  for(let n=0;n<cnt;n++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true);
+    const fn=dv.getUint16(p+28,true),ex=dv.getUint16(p+30,true),cm=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    files[new TextDecoder().decode(u8.subarray(p+46,p+46+fn))]={method,csize,lo};
+    p+=46+fn+ex+cm;
+  }
+  const read=async name=>{
+    const f=files[name];if(!f)return null;
+    const lfn=dv.getUint16(f.lo+26,true),lex=dv.getUint16(f.lo+28,true),ds=f.lo+30+lfn+lex;
+    const comp=u8.subarray(ds,ds+f.csize);
+    const raw=f.method===0?comp:await ocsInflate(comp);
+    return new TextDecoder().decode(raw);
+  };
+  return {read,names:Object.keys(files)};
+}
+async function ocsParseXlsx(buf){
+  const {read,names}=await ocsUnzip(buf);
+  const gt=(el,n)=>el.getElementsByTagNameNS('*',n); // namespace-agnostic: handles both default-ns and x:-prefixed worksheets
+  let shared=[];
+  const ss=await read('xl/sharedStrings.xml');
+  if(ss){const d=new DOMParser().parseFromString(ss,'application/xml');shared=[...gt(d,'si')].map(si=>[...gt(si,'t')].map(t=>t.textContent).join(''));}
+  const wsName=names.includes('xl/worksheets/sheet1.xml')?'xl/worksheets/sheet1.xml':names.filter(n=>/^xl\/worksheets\/.*\.xml$/.test(n)).sort()[0];
+  if(!wsName)throw new Error('no worksheet found in workbook');
+  const doc=new DOMParser().parseFromString(await read(wsName),'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('worksheet XML could not be parsed');
+  const grid=[];
+  [...gt(doc,'row')].forEach(row=>{
+    const out=[];let cur=-1;
+    [...gt(row,'c')].forEach(c=>{
+      const ref=c.getAttribute('r');let ci;
+      if(ref){ci=ocsColIdx(ref.match(/^([A-Z]+)/)[1]);}else ci=cur+1;
+      cur=ci;
+      const t=c.getAttribute('t'),v=gt(c,'v')[0],is=gt(c,'is')[0];
+      let val='';
+      if(t==='inlineStr'&&is)val=[...gt(is,'t')].map(x=>x.textContent).join('');
+      else if(t==='s'&&v)val=shared[+v.textContent]||'';
+      else if(v)val=v.textContent;
+      out[ci]=val;
+    });
+    grid.push(out);
+  });
+  return grid;
+}
+function ocsBuildFromGrid(grid,fname){
+  const norm=s=>String(s==null?'':s).trim().toLowerCase().replace(/\s+/g,' ');
+  const header=grid[0]||[];
+  const H={};header.forEach((h,i)=>{const k=norm(h);if(k&&!(k in H))H[k]=i;});
+  const need=k=>{if(!(k in H))throw new Error('missing column "'+k+'" — is this the Item-Level Order & Sales Forecast export?');return H[k];};
+  const c={sku:need('sku'),name:need('item name'),sub:need('subcategory'),cls:H['selling class'],wos:H['wos target'],oh:H['on-hand units'],oo:H['on-order units'],pipe:H['current pipe (oh+oo)']};
+  const ordC=[],salC=[];for(let w=1;w<=8;w++){ordC.push(need('order forecast week '+w));salC.push(need('sales forecast week '+w));}
+  const num=v=>{const n=parseFloat(v);return isFinite(n)?Math.round(n):0;};
+  const cat=sub=>{const s=norm(sub);if(s.includes('infused'))return'Infused Pre-Rolls';if(s.includes('pre-roll'))return'Pre-Rolls';if(s.includes('vape'))return'Vapes';if(s.includes('concentrate')||s.includes('extract')||s.includes('oil'))return'Extracts';if(s.includes('flower'))return'Flower';return String(sub||'').trim()||'Other';};
+  const items=[];
+  for(let r=1;r<grid.length;r++){
+    const row=grid[r]||[],sku=String(row[c.sku]||'').trim();
+    if(!sku||/^applied filters/i.test(sku))continue;
+    const name=String(row[c.name]||'').trim();if(!name)continue;
+    items.push({sku,name,sub:String(row[c.sub]||'').trim(),cat:cat(row[c.sub]),
+      cls:c.cls!=null?String(row[c.cls]||'').trim():'',
+      wos:c.wos!=null?Math.round((parseFloat(row[c.wos])||0)*100)/100:0,
+      oh:c.oh!=null?num(row[c.oh]):0,oo:c.oo!=null?num(row[c.oo]):0,pipe:c.pipe!=null?num(row[c.pipe]):0,
+      ord:ordC.map(i=>num(row[i])),sal:salC.map(i=>num(row[i]))});
+  }
+  const today=new Date().toISOString().slice(0,10);
+  return {asOf:today,label:'Uploaded '+today,weeks:8,items,file:fname};
+}
+async function ocsHandleFile(input){
+  const file=input.files&&input.files[0];if(!file){return;}
+  try{
+    const F=ocsBuildFromGrid(await ocsParseXlsx(await file.arrayBuffer()),file.name);
+    if(!F.items.length)throw new Error('no item rows found in the sheet');
+    localStorage.setItem(OCS_KEY,JSON.stringify(F));
+    ocsMsg={type:'ok',text:'Loaded '+F.items.length+' SKUs from '+file.name+'.'};
+  }catch(err){
+    ocsMsg={type:'err',text:'Could not read that file — '+(err&&err.message||err)+'.'};
+  }
+  input.value='';
+  showPage(curYr,'planning:fcst:ocs');
+}
+function makeOcsWeeks(s){
+  return new Chart(document.getElementById(s.cid),{
+    type:'bar',
+    data:{labels:s.labels,datasets:[
+      {label:'Order forecast',data:s.ord,backgroundColor:hexA(s.oc,.85),borderColor:s.oc,borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:30},
+      {label:'Sales forecast',data:s.sal,backgroundColor:hexA(s.sc,.28),borderColor:hexA(s.sc,.6),borderWidth:1.5,borderRadius:4,borderSkipped:false,maxBarThickness:30}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10,family:"'DM Mono',monospace"},color:tickC,boxWidth:9,boxHeight:9,padding:14,usePointStyle:true,pointStyle:'rectRounded'}},
+        tooltip:{...tipBase,callbacks:{title:c=>{const l=s.labels[c[0].dataIndex];return Array.isArray(l)?l.join(' · '):l;},label:c=>` ${c.dataset.label}: ${c.raw==null?'—':Math.round(c.raw).toLocaleString()} units`}}},
+      scales:{x:{ticks:{font:tickF,color:tickC},grid:{display:false},border:{color:axisC}},
+              y:{beginAtZero:true,ticks:{callback:v=>fmtK(v),font:tickF,color:tickC,maxTicksLimit:5},grid:{color:gridC},border:{display:false}}}}
+  });
+}
+function buildForecast(yr,key){
+  const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/></svg>`;
+  const c=FORECAST_CUSTOMERS.find(x=>x.key===key)||FORECAST_CUSTOMERS[0];
+  if(c.key!=='ocs'){
+    const title=`${c.name}<small style="font-weight:500;color:var(--muted);margin-left:9px;letter-spacing:0">${c.full}</small>`;
+    const note=`<div class="inprog"><span class="tag">Building</span><span>Recreational sell-in forecast for <b>${c.full}</b>${c.prov?` (${c.prov})`:''} — this page is scaffolded and will populate once ${c.name}'s forecast feed is wired in.</span></div>`;
+    const body=`<div class="ops-ph"><div class="ph-d">Order &amp; sales forecast to ${c.name} by item and week, the same way OCS is built. Send the weekly export and I'll switch this page live.</div><span class="ph-chip">Awaiting data</span></div>`;
+    return {html:`<div class="page-head"><div class="page-title">${icon}${title}</div></div>${note}${body}`, specs:[]};
+  }
+  const _e=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const F=ocsLoad(),A=ocsAgg(F),W=A.W;
+  const wkLab=Array.from({length:W},(_,i)=>'W'+(i+1));
+  // Week dates derived from the forecast's data date (asOf). W1 = current week (its order is already placed); weeks start Monday.
+  const _MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
+  const _w1Mon=new Date(_asOfD);_w1Mon.setDate(_w1Mon.getDate()-((_w1Mon.getDay()+6)%7));
+  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(_w1Mon);d.setDate(d.getDate()+i*7);return _MON[d.getMonth()]+' '+d.getDate();});
+  const cid='ocs-weeks';
+  const specs=[{cid,kind:'ocsw',labels:wkLab.map((w,i)=>[w,wkDates[i]]),ord:A.wk.ord,sal:A.wk.sal,oc:cssVar('--accent'),sc:cssVar('--teal')}];
+  let pk=0;for(let i=1;i<W;i++)if(A.wk.ord[i]>A.wk.ord[pk])pk=i;
+
+  const title=`OCS<small style="font-weight:500;color:var(--muted);margin-left:9px;letter-spacing:0">Ontario Cannabis Store · DC001 · ${W}-week order &amp; sales forecast</small>`;
+  const upIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+  const btnCss=`font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1`;
+  const head=`<div class="page-head"><div class="page-title">${icon}${title}</div>
+    <div class="head-right" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+      <span class="tb tb-nu">${_e(F.label)}${F.file?' · '+_e(F.file):''}</span>
+      <button id="ocsUpBtn" type="button" style="${btnCss}">${upIcon}Upload</button>
+      ${F.file?`<button id="ocsResetBtn" type="button" title="Revert to the built-in forecast" style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);background:none;border:none;cursor:pointer;padding:4px">Reset</button>`:''}
+      <input type="file" id="ocsFileInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+    </div></div>`;
+
+  const msg=ocsMsg?`<div class="inprog" style="margin-bottom:18px;${ocsMsg.type==='err'?'border-color:var(--coral)':'border-color:var(--teal)'}"><span class="tag" style="color:${ocsMsg.type==='err'?'var(--coral)':'var(--teal)'};background:${ocsMsg.type==='err'?'rgba(240,90,90,.14)':'rgba(45,190,150,.14)'}">${ocsMsg.type==='err'?'Error':'Loaded'}</span><span>${_e(ocsMsg.text)}</span></div>`:'';
+  ocsMsg=null;
+
+  const stats=`<div class="stat-row">
+    <div class="stat"><div class="k">8-wk Order Forecast</div><div class="v teal">${fmtN(A.tot.ord8)}</div><div class="s">units OCS plans to order</div></div>
+    <div class="stat"><div class="k">8-wk Order Value</div><div class="v" style="color:var(--accent)">${fmtMoneyK(A.tot.rev8)}</div><div class="s">order units × landed cost</div></div>
+    <div class="stat"><div class="k">8-wk Sales Forecast</div><div class="v" style="color:var(--accent)">${fmtN(A.tot.sal8)}</div><div class="s">projected sell-through</div></div>
+    <div class="stat"><div class="k">On Hand</div><div class="v">${fmtN(A.tot.oh)}</div><div class="s">units at DC001</div></div>
+    <div class="stat"><div class="k">On Order</div><div class="v lav">${fmtN(A.tot.oo)}</div><div class="s">open purchase orders</div></div>
+    <div class="stat"><div class="k">Current Pipe</div><div class="v amber">${fmtN(A.tot.pipe)}</div><div class="s">on-hand + on-order</div></div>
+    <div class="stat"><div class="k">Active SKUs</div><div class="v">${fmtN(A.tot.n)}</div><div class="s">${A.cats.length} categories</div></div>
+  </div>`;
+
+  const chartCard=`<div class="month-card collapsible">
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true">
+      <div class="mc-name"><span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span><span class="dot" style="background:var(--accent)"></span>Weekly Order vs Sales Forecast</div>
+      <div class="badges"><span class="tb tb-vol">${fmtN(A.tot.ord8)} order units</span><span class="tb tb-nu">peak ${wkLab[pk]}</span></div>
+    </div>
+    <div class="cat-collapse">${stats}
+    <div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="${cid}" role="img" aria-label="Weekly OCS order and sales forecast totals"></canvas></div></div></div>
+  </div>`;
+
+  const GC=`minmax(0,1.4fr) repeat(${W},.78fr) .82fr 1fr`;
+  const wkCell=(u,rev)=>u?`<div class="mc-cell mc-dual">${fmtN(u)}<span class="mc-sub">${fmtMoneyK(rev)}</span></div>`:`<div class="mc-cell muted">—</div>`;
+  const catHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Category</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--faint);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
+  const catBody=A.cats.map((cc,ci)=>{
+    const tok=OCS_CAT_TOK[cc.cat]||'--muted';
+    const cells=cc.ord.map((v,w)=>wkCell(v,cc.rev[w])).join('');
+    const catRow=`<div class="mrow ocs-cat-row" data-occ="${ci}" role="button" tabindex="0" aria-expanded="false" style="grid-template-columns:${GC}">
+      <div class="mc-month"><span class="ocs-chev" aria-hidden="true">&#9656;</span><span class="dot" style="background:var(${tok})"></span><span class="skf-d">${cc.cat}<small>${cc.n} SKU${cc.n!==1?'s':''}</small></span></div>
+      ${cells}
+      <div class="mc-cell teal">${fmtN(cc.ord8)}</div>
+      <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(cc.rev8)}</div>
+    </div>`;
+    const items=F.items.filter(it=>it.cat===cc.cat)
+      .map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0)}))
+      .sort((a,b)=>b.o8-a.o8);
+    const subRows=items.map(it=>{
+      const uc=OCS_UNIT_COST[it.sku]||0;
+      const icells=it.ord.map(v=>wkCell(v,v*uc)).join('');
+      const irev=uc*it.o8;
+      return `<div class="mrow ocs-item-row" data-occ="${ci}" style="grid-template-columns:${GC};display:none">
+        <div class="mc-month"><span class="skf-d">${_e(it.name)}<small>${_e(it.sku)}</small></span></div>
+        ${icells}
+        <div class="mc-cell teal">${fmtN(it.o8)}</div>
+        <div class="mc-cell" style="color:var(--accent)">${irev?fmtMoneyK(irev):'<span class="muted">—</span>'}</div>
+      </div>`;
+    }).join('');
+    return catRow+subRows;
+  }).join('');
+  const catTot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}">
+    <div class="mc-month">Total · ${A.tot.n} SKUs</div>
+    ${A.wk.ord.map((v,w)=>wkCell(v,A.wk.rev[w])).join('')}
+    <div class="mc-cell teal">${fmtN(A.tot.ord8)}</div>
+    <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(A.tot.rev8)}</div>
+  </div>`;
+  const caret=`<span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+  const catCard=`<div class="month-card collapsible" style="margin-top:16px">
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Order Forecast by Category &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">units / revenue per week</span>${exportBox()}</div></div>
+    <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${catHead}${catBody}${catTot}</div></div></div>
+  </div>`;
+
+  const GI=`minmax(0,2.1fr) .95fr .45fr .7fr .7fr .72fr .55fr .82fr .82fr`;
+  const itHead=`<div class="mrow head" style="grid-template-columns:${GI}"><div>Item</div><div style="text-align:left">Category</div><div>Cls</div><div>On Hand</div><div>On Order</div><div>Pipe</div><div>WOS</div><div>Ord 8-wk</div><div>Sal 8-wk</div></div>`;
+  const its=F.items.map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0),s8:(it.sal||[]).reduce((a,v)=>a+(v||0),0)})).sort((a,b)=>b.o8-a.o8);
+  const itBody=its.map(it=>{
+    const tok=OCS_CAT_TOK[it.cat]||'--muted';
+    return `<div class="mrow" style="grid-template-columns:${GI}">
+      <div class="mc-month"><span class="dot" style="background:var(${tok})"></span><span class="skf-d">${_e(it.name)}<small>${_e(it.sku)}</small></span></div>
+      <div class="mc-cell" style="text-align:left;color:var(--ink-2)">${_e(it.cat)}</div>
+      <div class="mc-cell muted">${_e(it.cls)||'—'}</div>
+      <div class="mc-cell">${fmtN(it.oh)}</div>
+      <div class="mc-cell">${fmtN(it.oo)}</div>
+      <div class="mc-cell">${fmtN(it.pipe)}</div>
+      <div class="mc-cell muted">${it.wos?it.wos.toFixed(1):'—'}</div>
+      <div class="mc-cell teal">${fmtN(it.o8)}</div>
+      <div class="mc-cell" style="color:var(--accent)">${fmtN(it.s8)}</div>
+    </div>`;
+  }).join('');
+  const itCard=`<div class="month-card collapsible" style="margin-top:16px">
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--lav)"></span>Item-Level Forecast · ${A.tot.n} SKUs</div><div class="badges"><span class="tb tb-nu">sorted by 8-wk order</span></div></div>
+    <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${itHead}${itBody}</div></div></div>
+  </div>`;
+
+  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: OCS “Order and Sales Forecast by Item Level” export (warehouse DC001, vendor MERA CANNABIS CORP., released available items). Order forecast = units OCS plans to purchase per week; sales forecast = their projected sell-through. Week 1 order is typically blank (already placed). Use <b>Upload</b> to drop in the new .xlsx each week — it’s parsed in your browser and saved locally, so the page keeps the latest upload on reload. ${A.tot.n} SKUs · loaded ${_e(F.asOf)}.</div>`;
+
+  return {html:`${head}${msg}${chartCard}${catCard}${itCard}${note}`, specs};
 }
 
 /* ---------- Operations · Master Data (ERP-style item / BOM / routing master) ----------
@@ -1896,7 +2173,12 @@ function renderNav(yr,active){
     return;
   }
   if(isPlanningPage(active)){
-    let html=`<div class="nav-sec first">Schedules</div>`;
+    let html=`<div class="nav-sec first">Forecast</div>`;
+    FORECAST_CUSTOMERS.forEach(c=>{
+      const pg='planning:fcst:'+c.key;
+      html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${c.name}</span></button>`;
+    });
+    html+=`<div class="nav-sec">Schedules</div>`;
     PROD_SITES.forEach(s=>{
       const pg='planning:prod:'+s.key;
       html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${s.name}</span></button>`;
@@ -1943,9 +2225,9 @@ function showPage(yr,page){
   if(cmpMode==='fcst'&&page.slice(0,6)==='brand:')cmpMode='mom'; // forecast is category-level; SKU data has no plan
   if(cmpMode==='fcst'&&page==='skurank')cmpMode='mom'; // ranking is actuals-only; keep the month slider on complete months
   const main=document.getElementById('main');
-  const r= page==='overview'?buildOverview(yr):page==='skurank'?buildSkuRank(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
+  const r= page==='overview'?buildOverview(yr):page==='skurank'?buildSkuRank(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:fcst:'?buildForecast(yr,page.slice(14)):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
   main.innerHTML=r.html;
-  (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
+  (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):s.kind==='ocsw'?makeOcsWeeks(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
   document.querySelectorAll('#nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   curPage=page;
   if(isOpsPage(page))lastOps=page; else if(isPlanningPage(page))lastPlanning=page; else lastSales=page;
@@ -1955,9 +2237,9 @@ function showPage(yr,page){
 }
 // Reflect comparison-mode availability + selection in the header toggle (YoY needs a prior year; hide the toggle on the overview).
 function syncCmpUI(){
-  const noCtrl=curPage==='overview'||curPage==='crystal'||curPage==='skurank'||isPlanningPage(curPage)||isOpsPage(curPage); // pages with no comparison toggle / inert export
+  const noCtrl=curPage==='overview'||curPage==='crystal'||curPage==='skurank'||isPlanningPage(curPage)||isOpsPage(curPage); // pages with no comparison toggle
   const es=document.getElementById('exportSlot');
-  if(es)es.classList.toggle('hidden',noCtrl);
+  if(es)es.classList.toggle('hidden',!currentExportModel()||curPage==='planning:fcst:ocs'); // export shows wherever a model exists; on the OCS page it lives in the table card header instead
   const cg=document.getElementById('cmpGroup');
   if(!cg)return;
   const hasPrev=completeMonths(String(Number(curYr)-1)).length>0;
@@ -1998,7 +2280,7 @@ function render(yr){
 
 let curYr='2026',curPage='overview',selMonth=null,cmpMode='mom',skuRankMetric='rev',skuRankPeriod='mon',skuRankGroup='brand';
 const skuRankFilter=new Set();
-let lastSales='overview',lastOps='ops:'+OPS_SECTIONS[0].key,lastPlanning='planning:'+PLANNING_SECTIONS[0].key; // remember the last page visited in each mode so the switch returns you there
+let lastSales='overview',lastOps='ops:'+OPS_SECTIONS[0].key,lastPlanning='planning:fcst:'+FORECAST_CUSTOMERS[0].key; // remember the last page visited in each mode so the switch returns you there
 let CASH_LOCKED=true;
 const CASH_PASSWORD='Mera2026';
 document.addEventListener('click',e=>{
@@ -2026,6 +2308,28 @@ document.addEventListener('click',e=>{
 document.getElementById('nav').addEventListener('click',e=>{
   const b=e.target.closest('.nav-item');if(!b)return;
   showPage(curYr,b.dataset.page);
+});
+// OCS forecast: weekly .xlsx upload + reset (parsed client-side, cached in localStorage)
+document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('#ocsUpBtn')){const fi=document.getElementById('ocsFileInput');if(fi)fi.click();return;}
+  if(e.target.closest&&e.target.closest('#ocsResetBtn')){try{localStorage.removeItem(OCS_KEY);}catch(_){}ocsMsg={type:'ok',text:'Reverted to the built-in forecast.'};showPage(curYr,'planning:fcst:ocs');return;}
+  const cr=e.target.closest&&e.target.closest('.ocs-cat-row');
+  if(cr){
+    const ci=cr.getAttribute('data-occ');
+    const open=cr.classList.toggle('open');
+    cr.setAttribute('aria-expanded',open?'true':'false');
+    document.querySelectorAll('.ocs-item-row[data-occ="'+ci+'"]').forEach(r=>{r.style.display=open?'grid':'none';});
+  }
+});
+// keyboard access for the category drill-down rows
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.classList&&e.target.classList.contains('ocs-cat-row')){
+    e.preventDefault();e.target.click();
+  }
+});
+document.addEventListener('change',e=>{
+  const fi=e.target.closest&&e.target.closest('#ocsFileInput');
+  if(fi)ocsHandleFile(fi);
 });
 document.addEventListener('click',e=>{
   const mb=e.target.closest&&e.target.closest('.mon-slider .seg[data-mon]');
@@ -2095,11 +2399,13 @@ function toggleCatCard(head){
   return true;
 }
 document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('.exp-btn'))return; // export buttons can live inside a card header — don't toggle collapse
   const head=e.target.closest&&e.target.closest('.month-card.collapsible>.mc-head');
   if(head)toggleCatCard(head);
 });
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter'&&e.key!==' ')return;
+  if(e.target.closest&&e.target.closest('.exp-btn'))return; // let the export button handle its own keypress
   const head=e.target.closest&&e.target.closest('.month-card.collapsible>.mc-head');
   if(head&&toggleCatCard(head))e.preventDefault();
 });
@@ -2280,9 +2586,39 @@ function brandExportModel(yr,brand){
     filename:'Mera_'+brand.replace(/[^A-Za-z0-9]+/g,'-')+'_'+yr,sheet:brand,cols,rows,
     totals:[['Total','','',gU,gR,gC,null]]};
 }
+// OCS "Order Forecast by Category & Week" — mirrors the on-screen table: category rollup rows + SKU drill-down + total, per-week units and per-week order revenue.
+function ocsForecastExportModel(){
+  const F=ocsLoad(),A=ocsAgg(F),W=A.W;
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
+  const w1Mon=new Date(asOfD);w1Mon.setDate(w1Mon.getDate()-((w1Mon.getDay()+6)%7));
+  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(w1Mon);d.setDate(d.getDate()+i*7);return MON[d.getMonth()]+' '+d.getDate();});
+  const cols=[{label:'Category / Item',fmt:'text'}];
+  for(let w=0;w<W;w++)cols.push({label:'W'+(w+1)+' units · '+wkDates[w],fmt:'int'});
+  cols.push({label:'8-wk Units',fmt:'int'});
+  for(let w=0;w<W;w++)cols.push({label:'W'+(w+1)+' $ · '+wkDates[w],fmt:'money'});
+  cols.push({label:'Order Value ($)',fmt:'money'});
+  const rows=[];
+  A.cats.forEach(cc=>{
+    rows.push([cc.cat,...cc.ord,cc.ord8,...cc.rev,cc.rev8]);
+    F.items.filter(it=>it.cat===cc.cat)
+      .map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0)}))
+      .sort((a,b)=>b.o8-a.o8)
+      .forEach(it=>{
+        const uc=OCS_UNIT_COST[it.sku]||0;
+        rows.push(['    '+it.name+' — '+it.sku,...it.ord,it.o8,...it.ord.map(v=>v*uc),it.o8*uc]);
+      });
+  });
+  const totals=[['Total · '+A.tot.n+' SKUs',...A.wk.ord,A.tot.ord8,...A.wk.rev,A.tot.rev8]];
+  return {title:'OCS · Order Forecast by Category & Week',
+    subtitle:'DC001 · '+W+'-week order & sales forecast · '+(F.label||'')+(F.file?' · '+F.file:''),
+    filename:'Mera_OCS_Order-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
+    sheet:'OCS Order Forecast',cols,rows,totals};
+}
 function currentExportModel(){
   const yr=curYr,page=curPage;
   if(!page||page==='overview')return null;
+  if(page==='planning:fcst:ocs')return ocsForecastExportModel();
   if(page.slice(0,6)==='brand:'){const b=page.slice(6);return (TYPES.some(t=>SKU_DATA[yr]&&SKU_DATA[yr][t.key]&&SKU_DATA[yr][t.key][b]))?brandExportModel(yr,b):null;}
   if(TYPES.some(t=>t.key===page))return catExportModel(yr,page);
   return null;
@@ -2322,6 +2658,11 @@ function exportPDF(){
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.exp-btn[data-export]');
   if(!b)return;
+  // Warn before exporting while revenue is hidden — the $ would be redacted to ••• in the file.
+  if(CASH_LOCKED){
+    const enterPw=confirm('Revenue is currently hidden (•••) and will be redacted in the export.\n\nOK — enter the password to reveal $ figures first\nCancel — export anyway with revenue hidden');
+    if(enterPw){openPw();return;}
+  }
   if(b.dataset.export==='excel')exportExcel();
   else if(b.dataset.export==='pdf')exportPDF();
 });
