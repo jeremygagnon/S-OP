@@ -1277,7 +1277,7 @@ function buildForecast(yr,key){
   const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(_w1Mon);d.setDate(d.getDate()+i*7);return _MON[d.getMonth()]+' '+d.getDate();});
   const specs=[];
 
-  const title=`OCS<small style="font-weight:500;color:var(--muted);margin-left:9px;letter-spacing:0">Ontario Cannabis Store · DC001 · ${W}-week order &amp; sales forecast</small>`;
+  const title=`OCS`;
   const upIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
   const btnCss=`font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1`;
   const head=`<div class="page-head"><div class="page-title">${icon}${title}</div>
@@ -1363,7 +1363,7 @@ function buildForecast(yr,key){
   </div>`;
   const brandHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Brand</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
   const brandCard=`<div class="month-card collapsible" style="margin-top:16px">
-    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Order Forecast by Brand &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span></div></div>
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Order Forecast by Brand &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox('brand')}</div></div>
     <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${brandHead}${grpRows('brand',brandGroups)}${grpTot}</div></div></div>
   </div>`;
 
@@ -2647,9 +2647,10 @@ document.addEventListener('keydown',e=>{
 /* ---------- data export: Excel (.xlsx) + PDF (print) ---------- */
 const XLS_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l6 5M15 13l-6 5"/></svg>';
 const PDF_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2a1.5 1.5 0 0 1 0 3H8zM8 16v-3M13 13v3h1.2M13 14.5h1.6M17.5 13H19M17.5 13v3M17.5 14.5h1.3"/></svg>';
-function exportBox(){
-  return `<div class="exp-box" role="group" aria-label="Export this page">`+
-    `<button type="button" class="exp-btn" data-export="excel" title="Download as Excel (.xlsx)" aria-label="Download as Excel">${XLS_SVG}<span>Excel</span></button>`+
+function exportBox(scope){
+  const sc=scope?` data-scope="${scope}"`:'';
+  return `<div class="exp-box" role="group" aria-label="Export this table">`+
+    `<button type="button" class="exp-btn" data-export="excel"${sc} title="Download as Excel (.xlsx)" aria-label="Download as Excel">${XLS_SVG}<span>Excel</span></button>`+
   `</div>`;
 }
 
@@ -2723,39 +2724,46 @@ function brandExportModel(yr,brand){
     filename:'Mera_'+brand.replace(/[^A-Za-z0-9]+/g,'-')+'_'+yr,sheet:brand,cols,rows,
     totals:[['Total','','',gU,gR,gC,null]]};
 }
-// OCS "Order Forecast by Category & Week" — mirrors the on-screen table: category rollup rows + SKU drill-down + total, per-week units and per-week order revenue.
-function ocsForecastExportModel(){
+// OCS "Order Forecast by Category/Brand & Week" — mirrors the on-screen table: group rollup rows + SKU drill-down + total, per-week units and per-week order revenue.
+function ocsForecastExportModel(kind){
+  const isBrand=kind==='brand';
   const F=ocsLoad(),A=ocsAgg(F),W=A.W;
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
   const w1Mon=new Date(asOfD);w1Mon.setDate(w1Mon.getDate()-((w1Mon.getDay()+6)%7));
   const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(w1Mon);d.setDate(d.getDate()+i*7);return MON[d.getMonth()]+' '+d.getDate();});
-  const cols=[{label:'Category / Item',fmt:'text'}];
+  const groupOf=isBrand?(it=>OCS_SKU_BRAND[it.sku]||'Other'):(it=>it.cat);
+  const order=isBrand?OCS_BRAND_ORDER:['Pre-Rolls','Infused Pre-Rolls','Vapes','Extracts','Flower'];
+  const gm={};
+  F.items.forEach(it=>{
+    const k=groupOf(it),uc=OCS_UNIT_COST[it.sku]||0,o8=(it.ord||[]).reduce((a,v)=>a+(v||0),0);
+    const g=gm[k]||(gm[k]={key:k,ord:Array(W).fill(0),rev:Array(W).fill(0),ord8:0,rev8:0,items:[]});
+    g.ord8+=o8;g.rev8+=o8*uc;
+    for(let w=0;w<W;w++){g.ord[w]+=it.ord[w]||0;g.rev[w]+=(it.ord[w]||0)*uc;}
+    g.items.push({name:it.name,sku:it.sku,ord:it.ord,o8,uc});
+  });
+  const groups=Object.values(gm).sort((a,b)=>{const ia=order.indexOf(a.key),ib=order.indexOf(b.key);return (ia<0?99:ia)-(ib<0?99:ib)||b.ord8-a.ord8;});
+  groups.forEach(g=>g.items.sort((a,b)=>b.o8-a.o8));
+  const cols=[{label:(isBrand?'Brand / Item':'Category / Item'),fmt:'text'}];
   for(let w=0;w<W;w++){cols.push({label:'W'+(w+1)+' units · '+wkDates[w],fmt:'int'});cols.push({label:'W'+(w+1)+' $ · '+wkDates[w],fmt:'money'});} // units paired next to revenue for each week
   cols.push({label:'8-wk Units',fmt:'int'});
   cols.push({label:'Order Value ($)',fmt:'money'});
   const interleave=(label,units,rev,uTot,rTot)=>{const row=[label];for(let w=0;w<W;w++){row.push(units[w],rev[w]);}row.push(uTot,rTot);return row;};
   const rows=[];
-  A.cats.forEach(cc=>{
-    rows.push(interleave(cc.cat,cc.ord,cc.rev,cc.ord8,cc.rev8));
-    F.items.filter(it=>it.cat===cc.cat)
-      .map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0)}))
-      .sort((a,b)=>b.o8-a.o8)
-      .forEach(it=>{
-        const uc=OCS_UNIT_COST[it.sku]||0;
-        rows.push(interleave('    '+it.name+' — '+it.sku,it.ord,it.ord.map(v=>v*uc),it.o8,it.o8*uc));
-      });
+  groups.forEach(g=>{
+    rows.push(interleave(g.key,g.ord,g.rev,g.ord8,g.rev8));
+    g.items.forEach(it=>{rows.push(interleave('    '+it.name+' — '+it.sku,it.ord,it.ord.map(v=>v*it.uc),it.o8,it.o8*it.uc));});
   });
   const totals=[interleave('Total · '+A.tot.n+' SKUs',A.wk.ord,A.wk.rev,A.tot.ord8,A.tot.rev8)];
-  return {title:'OCS · Order Forecast by Category & Week',
+  return {title:'OCS · Order Forecast by '+(isBrand?'Brand':'Category')+' & Week',
     subtitle:'DC001 · '+W+'-week order & sales forecast · '+(F.label||'')+(F.file?' · '+F.file:''),
-    filename:'Mera_OCS_Order-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
-    sheet:'OCS Order Forecast',cols,rows,totals};
+    filename:'Mera_OCS_'+(isBrand?'Brand':'Order')+'-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
+    sheet:isBrand?'OCS Brand Forecast':'OCS Order Forecast',cols,rows,totals};
 }
-function currentExportModel(){
+function currentExportModel(scope){
   const yr=curYr,page=curPage;
   if(!page||page==='overview')return null;
-  if(page==='planning:fcst:ocs')return ocsForecastExportModel();
+  if(page==='planning:fcst:ocs')return ocsForecastExportModel(scope==='brand'?'brand':'cat');
   if(page.slice(0,6)==='brand:'){const b=page.slice(6);return (TYPES.some(t=>SKU_DATA[yr]&&SKU_DATA[yr][t.key]&&SKU_DATA[yr][t.key][b]))?brandExportModel(yr,b):null;}
   if(TYPES.some(t=>t.key===page))return catExportModel(yr,page);
   return null;
@@ -2767,8 +2775,8 @@ function _download(blob,name){
   a.href=url;a.download=name;document.body.appendChild(a);a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},0);
 }
-function exportExcel(){
-  const model=currentExportModel(); if(!model)return;
+function exportExcel(scope){
+  const model=currentExportModel(scope); if(!model)return;
   const HDR=4; // 0-based row index of the column-label header (after title / source / date / blank)
   const aoa=[[model.title],['Source: Mera Cannabis · Forecast vs Actual'+(CASH_LOCKED?' · $ hidden (•••)':'')],['Exported '+new Date().toISOString().slice(0,10)],[],model.cols.map(c=>c.label)];
   model.rows.forEach(r=>aoa.push(r.map((v,ci)=>fmtCellXlsx(v,model.cols[ci].fmt))));
@@ -2802,12 +2810,13 @@ function exportPDF(){
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.exp-btn[data-export]');
   if(!b)return;
+  const scope=b.dataset.scope;
   // Warn before exporting while revenue is hidden — the $ would be redacted to ••• in the file.
   if(CASH_LOCKED){
     const enterPw=confirm('Revenue is currently hidden (•••) and will be redacted in the export.\n\nOK — enter the password to reveal $ figures first\nCancel — export anyway with revenue hidden');
     if(enterPw){openPw();return;}
   }
-  if(b.dataset.export==='excel')exportExcel();
+  if(b.dataset.export==='excel')exportExcel(scope);
   else if(b.dataset.export==='pdf')exportPDF();
 });
 
