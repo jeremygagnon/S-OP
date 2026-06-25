@@ -305,7 +305,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .mrow{display:grid;gap:12px;padding:13px 20px;border-top:1px solid var(--line-2);align-items:center;}
 .mrow:first-child{border-top:none;}
 .mrow.head{padding:11px 20px;}
-.mrow.head>div{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
+.mrow.head>div{font-size:9px;color:var(--ink-2);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;}
 .mrow.head>div:not(:first-child){text-align:right;}
 .mc-month{font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;}
 .mc-month .ni-tag{margin-left:2px;}
@@ -319,16 +319,14 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .skf-d small{font-size:10px;color:var(--faint);font-family:var(--mono);font-weight:400;letter-spacing:0.02em;}
 .skf-tot{border-top:1.5px solid var(--line);}
 .skf-tot .mc-month{color:var(--muted);font-weight:600;}
-/* OCS category drill-down — click a category row to reveal its SKUs */
-.ocs-cat-row{cursor:pointer;transition:background .12s;}
-.ocs-cat-row:hover{background:color-mix(in srgb,var(--teal) 7%,transparent);}
-.ocs-cat-row.open{background:color-mix(in srgb,var(--teal) 5%,transparent);}
-.ocs-chev{display:inline-block;width:10px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--faint);transition:transform .15s;}
-.ocs-cat-row.open .ocs-chev{transform:rotate(90deg);color:var(--teal);}
-.ocs-item-row{background:color-mix(in srgb,var(--ink) 3%,transparent);}
-.ocs-item-row .mc-month{font-weight:500;padding-left:26px;}
-.ocs-item-row .mc-cell{font-size:13px;color:var(--muted);}
-.ocs-item-row .mc-cell.teal{color:var(--teal);}
+/* OCS category / brand drill-down — click a row to open the SKU breakdown modal */
+.ocs-grp-row{cursor:pointer;transition:background .12s;}
+.ocs-grp-row:hover{background:color-mix(in srgb,var(--teal) 7%,transparent);}
+.ocs-grp-row:hover .ocs-drill{color:var(--teal);}
+.ocs-drill{flex-shrink:0;color:var(--faint);transition:color .12s;}
+.ocs-blab{display:inline-flex;flex-direction:column;gap:3px;line-height:1;min-width:0;}
+.ocs-blogo{height:21px;max-width:128px;object-fit:contain;display:block;}
+.ocs-blab small{font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:0.03em;}
 /* day-by-day production schedule */
 .sched-day{margin-top:18px;}
 .sched-day:first-of-type{margin-top:0;}
@@ -1095,6 +1093,11 @@ let ocsMsg=null;
 const OCS_CAT_TOK={'Pre-Rolls':'--pre','Infused Pre-Rolls':'--ipr','Vapes':'--vape','Extracts':'--ext','Flower':'--flower'};
 /* Per-unit landed cost by OCS SKU — from the PO Master Tracker (col B Provincial SKU → col P Landed Cost, latest PO). Drives the $ columns on the OCS forecast. */
 const OCS_UNIT_COST={"102875_2x1g___":5.8,"104157_10x0.5g___":15.25,"104156_1x1g___":3.43,"105643_10x0.5g___":15.25,"103719_2x1g___":5.8,"102779_10x0.5g___":15.25,"310282_1x1g___":8.52,"103717_1x0.5g___":2.44,"103236_1x1g___":3.43,"105457_10x0.5g___":15.25,"103718_1x0.5g___":2.44,"103235_1x1g___":3.43,"312005_1x1g___":9.84,"105644_10x0.5g___":15.25,"310145_1g___":16.27,"302176_1g___":16.72,"312004_1x1g___":10.14,"302004_1g___":16.72,"302174_1g___":16.72,"302003_1g___":16.72,"102875_5x1g___":13.31,"312047_1x1g___":8.37,"312374_1x1g___":8.52,"300818_1g___":16.72,"302175_1g___":16.72,"310076_1g___":15.25};
+/* Brand owner per OCS SKU — matched OCS item names to the brand SKU catalog (RSO → Ellevia by decision). Drives the "by Brand & Week" forecast table. */
+const OCS_SKU_BRAND={"102875_2x1g___":"Buddy Blooms","104157_10x0.5g___":"Buddy Blooms","104156_1x1g___":"CCHR","105643_10x0.5g___":"Buddy Blooms","103719_2x1g___":"Buddy Blooms","102779_10x0.5g___":"Buddy Blooms","310282_1x1g___":"Shatterizer","103717_1x0.5g___":"Buddy Blooms","103236_1x1g___":"Buddy Blooms","105457_10x0.5g___":"Buddy Blooms","103718_1x0.5g___":"Buddy Blooms","103235_1x1g___":"Buddy Blooms","312005_1x1g___":"Shatterizer","105644_10x0.5g___":"Buddy Blooms","310145_1g___":"Ellevia","302176_1g___":"LITTI","312004_1x1g___":"GREAZY","302004_1g___":"LITTI","302174_1g___":"LITTI","302003_1g___":"LITTI","102875_5x1g___":"Buddy Blooms","312047_1x1g___":"Shatterizer","312374_1x1g___":"Shatterizer","300818_1g___":"LITTI","302175_1g___":"LITTI","310076_1g___":"Shatterizer"};
+const OCS_BRAND_ORDER=['Buddy Blooms','Shatterizer','LITTI','GREAZY','CCHR','Ellevia','Hunny Pot'];
+function ocsBrandOf(it){return OCS_SKU_BRAND[it.sku]||'Other';}
+let _ocsDrill=null;
 const OCS_FCST_DEFAULT={"asOf":"2026-06-24","label":"Imported 2026-06-24","weeks":8,"items":[{"sku":"102875_2x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":9681,"oo":4260,"pipe":13941,"ord":[0,972,1704,1704,1704,1704,1704,1776],"sal":[2090,1858,1781,1703,1703,1703,1703,1703]},{"sku":"104157_10x0.5g___","name":"Strawberry OG Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7549,"oo":5604,"pipe":13153,"ord":[0,2640,2028,2040,2028,2028,1944,2028],"sal":[2207,2030,2030,2030,2030,2030,2030,1942]},{"sku":"104156_1x1g___","name":"Grape Diamonds Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":7461,"oo":7392,"pipe":14853,"ord":[0,1968,1968,2160,2184,2160,2064,2064],"sal":[2447,2165,1977,1977,2165,2165,2165,2071]},{"sku":"105643_10x0.5g___","name":"Purple Haze Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":6076,"oo":8268,"pipe":14344,"ord":[0,2544,2184,2184,2184,2172,2088,2184],"sal":[2370,2181,2181,2181,2181,2181,2181,2086]},{"sku":"103719_2x1g___","name":"Big Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5942,"oo":6156,"pipe":12098,"ord":[0,1584,1620,1608,1584,1572,1560,1620],"sal":[2113,1834,1724,1623,1602,1586,1572,1561]},{"sku":"102779_10x0.5g___","name":"10th Planet Pre-Rolls","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"C","wos":3.14,"oh":5197,"oo":5652,"pipe":10849,"ord":[0,1488,1584,1584,1584,1584,1524,1584],"sal":[1723,1585,1585,1585,1585,1585,1585,1516]},{"sku":"310282_1x1g___","name":"8 Ball Kush Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":4126,"oo":2280,"pipe":6406,"ord":[0,1200,1320,1224,1248,1248,1248,1296],"sal":[1245,1245,1304,1304,1245,1245,1245,1245]},{"sku":"103717_1x0.5g___","name":"Lil Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":3720,"oo":3144,"pipe":6864,"ord":[0,504,1104,1200,1200,1200,1152,1152],"sal":[1359,1202,1098,1098,1202,1202,1202,1150]},{"sku":"103236_1x1g___","name":"Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2854,"oo":1728,"pipe":4582,"ord":[0,312,720,816,816,816,768,768],"sal":[917,811,741,741,811,811,811,776]},{"sku":"105457_10x0.5g___","name":"Ethos Glue Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2746,"oo":1236,"pipe":3982,"ord":[0,240,708,708,708,708,672,708],"sal":[768,707,707,707,707,707,707,676]},{"sku":"103718_1x0.5g___","name":"Lil Buddy Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2674,"oo":3240,"pipe":5914,"ord":[0,336,960,1056,1056,1056,1008,1008],"sal":[1193,1055,963,963,1055,1055,1055,1009]},{"sku":"103235_1x1g___","name":"Indica Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2654,"oo":1704,"pipe":4358,"ord":[0,480,720,792,816,792,768,768],"sal":[904,800,730,730,800,800,800,765]},{"sku":"312005_1x1g___","name":"Rockstar Shatter Diamonds & Kief Triple Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":2288,"oo":1836,"pipe":4124,"ord":[0,912,876,840,828,840,828,876],"sal":[835,835,875,875,835,835,835,835]},{"sku":"105644_10x0.5g___","name":"Highbrid Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":2035,"oo":1284,"pipe":3319,"ord":[0,240,600,600,600,600,576,600],"sal":[653,601,601,601,601,601,601,575]},{"sku":"310145_1g___","name":"RSO","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":1920,"oo":1716,"pipe":3636,"ord":[0,876,744,756,744,756,744,684],"sal":[750,750,750,750,750,750,750,750]},{"sku":"302176_1g___","name":"Sunrise Smash 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1836,"oo":144,"pipe":1980,"ord":[0,324,372,372,372,384,372,372],"sal":[373,373,373,373,373,373,373,373]},{"sku":"312004_1x1g___","name":"MAC10 Diamonds & Sauce Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1775,"oo":912,"pipe":2687,"ord":[0,468,528,528,516,528,528,480],"sal":[525,525,525,525,525,525,525,525]},{"sku":"302004_1g___","name":"Slappn' Berry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1675,"oo":372,"pipe":2047,"ord":[0,516,420,420,408,408,408,408],"sal":[439,433,427,422,418,413,409,405]},{"sku":"302174_1g___","name":"Bussn' Blackberry 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":1443,"oo":0,"pipe":1443,"ord":[0,0,0,0,12,144,132,144],"sal":[165,159,154,150,146,143,140,137]},{"sku":"302003_1g___","name":"Gulupa Gulp 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":1370,"oo":636,"pipe":2006,"ord":[0,276,408,396,396,396,396,300],"sal":[398,398,398,398,398,398,398,398]},{"sku":"102875_5x1g___","name":"Big Buddy Sativa Pre-Roll","sub":"Pre-Rolled","cat":"Pre-Rolls","cls":"D","wos":1.43,"oh":1362,"oo":876,"pipe":2238,"ord":[0,60,396,408,408,408,408,384],"sal":[391,374,374,391,408,408,408,408]},{"sku":"312047_1x1g___","name":"SLURRICANE Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1359,"oo":2220,"pipe":3579,"ord":[0,672,708,684,684,672,684,708],"sal":[679,679,711,711,679,679,679,679]},{"sku":"312374_1x1g___","name":"Pink Gas Shatter Double Infused Pre-Roll","sub":"Infused Pre-Rolls","cat":"Infused Pre-Rolls","cls":"D","wos":1.43,"oh":1029,"oo":1332,"pipe":2361,"ord":[0,216,456,444,444,444,444,456],"sal":[442,442,462,462,442,442,442,442]},{"sku":"300818_1g___","name":"HELLA BUBBA. 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"D","wos":1.43,"oh":991,"oo":1524,"pipe":2515,"ord":[0,0,72,348,348,336,324,240],"sal":[393,384,374,364,354,344,335,324]},{"sku":"302175_1g___","name":"Pushn' Peach 510 Thread Cartridge","sub":"Vapes","cat":"Vapes","cls":"E","wos":1.43,"oh":918,"oo":264,"pipe":1182,"ord":[0,276,216,204,204,180,180,144],"sal":[253,242,232,220,209,197,187,175]},{"sku":"310076_1g___","name":"8 Ball Kush Shatter","sub":"Concentrates","cat":"Extracts","cls":"D","wos":1.43,"oh":803,"oo":1416,"pipe":2219,"ord":[0,384,432,432,432,432,420,372],"sal":[437,436,435,433,432,431,429,428]}]};
 
 /* ===================== Supabase live sync =====================
@@ -1304,34 +1307,50 @@ function buildForecast(yr,key){
   </div>`;
 
   const GC=`minmax(0,1.4fr) repeat(${W},.78fr) .82fr 1fr`;
-  const wkCell=(u,rev)=>u?`<div class="mc-cell mc-dual">${fmtN(u)}<span class="mc-sub">${fmtMoneyK(rev)}</span></div>`:`<div class="mc-cell muted">—</div>`;
-  const catHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Category</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--faint);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
-  const catBody=A.cats.map((cc,ci)=>{
-    const tok=OCS_CAT_TOK[cc.cat]||'--muted';
-    const cells=cc.ord.map((v,w)=>wkCell(v,cc.rev[w])).join('');
-    const catRow=`<div class="mrow ocs-cat-row" data-occ="${ci}" role="button" tabindex="0" aria-expanded="false" style="grid-template-columns:${GC}">
-      <div class="mc-month"><span class="ocs-chev" aria-hidden="true">&#9656;</span><span class="dot" style="background:var(${tok})"></span><span class="skf-d">${cc.cat}<small>${cc.n} SKU${cc.n!==1?'s':''}</small></span></div>
+  const wkCell=(u,rev)=>u?`<div class="mc-cell mc-dual">${fmtMoneyK(rev)}<span class="mc-sub">${fmtN(u)} u</span></div>`:`<div class="mc-cell muted">—</div>`;
+  const catHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Category</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
+  const drillIcon=`<svg class="ocs-drill" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>`;
+  /* group F.items by category or brand → uniform shape (carries per-SKU detail for the drill-down modal) */
+  const ocsGroup=(keyOf,order)=>{
+    const m={};
+    F.items.forEach(it=>{
+      const k=keyOf(it),uc=OCS_UNIT_COST[it.sku]||0,o8=(it.ord||[]).reduce((a,v)=>a+(v||0),0);
+      const g=m[k]||(m[k]={key:k,n:0,ord:Array(W).fill(0),rev:Array(W).fill(0),ord8:0,rev8:0,items:[]});
+      g.n++;g.ord8+=o8;g.rev8+=o8*uc;
+      const irev=Array(W).fill(0);
+      for(let w=0;w<W;w++){const u=it.ord[w]||0;g.ord[w]+=u;g.rev[w]+=u*uc;irev[w]=u*uc;}
+      g.items.push({name:it.name,sku:it.sku,ord:(it.ord||[]).slice(0,W),rev:irev,ord8:o8,rev8:o8*uc});
+    });
+    const gs=Object.values(m);
+    gs.forEach(g=>g.items.sort((a,b)=>b.ord8-a.ord8));
+    gs.sort((a,b)=>{const ia=order.indexOf(a.key),ib=order.indexOf(b.key);return (ia<0?99:ia)-(ib<0?99:ib)||b.ord8-a.ord8;});
+    return gs;
+  };
+  const catGroups=ocsGroup(it=>it.cat,['Pre-Rolls','Infused Pre-Rolls','Vapes','Extracts','Flower']);
+  const brandGroups=ocsGroup(ocsBrandOf,OCS_BRAND_ORDER);
+  _ocsDrill={W,GC,wkLab,wkDates,groups:{}};
+  const grpRows=(kind,groups)=>groups.map(g=>{
+    const gkey=kind+':'+g.key;
+    _ocsDrill.groups[gkey]={...g,kind};
+    const cells=g.ord.map((v,w)=>wkCell(v,g.rev[w])).join('');
+    let label;
+    if(kind==='cat'){
+      const tok=OCS_CAT_TOK[g.key]||'--muted';
+      label=`<span class="dot" style="background:var(${tok})"></span><span class="skf-d">${_e(g.key)}<small>${g.n} SKU${g.n!==1?'s':''}</small></span>`;
+    }else{
+      const logo=BRAND_LOGOS[g.key];
+      label=logo
+        ? `<span class="ocs-blab"><img class="ocs-blogo" src="${logo}" alt="${_e(g.key)} logo"><small>${g.n} SKU${g.n!==1?'s':''}</small></span>`
+        : `<span class="skf-d">${_e(g.key)}<small>${g.n} SKU${g.n!==1?'s':''}</small></span>`;
+    }
+    return `<div class="mrow ocs-grp-row" data-ocg="${_e(gkey)}" role="button" tabindex="0" aria-label="Open ${_e(g.key)} SKU breakdown" style="grid-template-columns:${GC}">
+      <div class="mc-month">${drillIcon}${label}</div>
       ${cells}
-      <div class="mc-cell teal">${fmtN(cc.ord8)}</div>
-      <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(cc.rev8)}</div>
+      <div class="mc-cell teal">${fmtN(g.ord8)}</div>
+      <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(g.rev8)}</div>
     </div>`;
-    const items=F.items.filter(it=>it.cat===cc.cat)
-      .map(it=>({...it,o8:(it.ord||[]).reduce((a,v)=>a+(v||0),0)}))
-      .sort((a,b)=>b.o8-a.o8);
-    const subRows=items.map(it=>{
-      const uc=OCS_UNIT_COST[it.sku]||0;
-      const icells=it.ord.map(v=>wkCell(v,v*uc)).join('');
-      const irev=uc*it.o8;
-      return `<div class="mrow ocs-item-row" data-occ="${ci}" style="grid-template-columns:${GC};display:none">
-        <div class="mc-month"><span class="skf-d">${_e(it.name)}<small>${_e(it.sku)}</small></span></div>
-        ${icells}
-        <div class="mc-cell teal">${fmtN(it.o8)}</div>
-        <div class="mc-cell" style="color:var(--accent)">${irev?fmtMoneyK(irev):'<span class="muted">—</span>'}</div>
-      </div>`;
-    }).join('');
-    return catRow+subRows;
   }).join('');
-  const catTot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}">
+  const grpTot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}">
     <div class="mc-month">Total · ${A.tot.n} SKUs</div>
     ${A.wk.ord.map((v,w)=>wkCell(v,A.wk.rev[w])).join('')}
     <div class="mc-cell teal">${fmtN(A.tot.ord8)}</div>
@@ -1339,8 +1358,13 @@ function buildForecast(yr,key){
   </div>`;
   const caret=`<span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
   const catCard=`<div class="month-card collapsible" style="margin-top:16px">
-    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Order Forecast by Category &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">units / revenue per week</span>${exportBox()}</div></div>
-    <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${catHead}${catBody}${catTot}</div></div></div>
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Order Forecast by Category &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox()}</div></div>
+    <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${catHead}${grpRows('cat',catGroups)}${grpTot}</div></div></div>
+  </div>`;
+  const brandHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Brand</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
+  const brandCard=`<div class="month-card collapsible" style="margin-top:16px">
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Order Forecast by Brand &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span></div></div>
+    <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${brandHead}${grpRows('brand',brandGroups)}${grpTot}</div></div></div>
   </div>`;
 
   const GI=`minmax(0,2.1fr) .95fr .45fr .7fr .7fr .72fr .55fr .82fr .82fr`;
@@ -1367,7 +1391,7 @@ function buildForecast(yr,key){
 
   const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: OCS “Order and Sales Forecast by Item Level” export (warehouse DC001, vendor MERA CANNABIS CORP., released available items). Order forecast = units OCS plans to purchase per week; sales forecast = their projected sell-through. Week 1 order is typically blank (already placed). Use <b>Upload</b> to drop in the new .xlsx each week — it’s parsed in your browser and saved locally, so the page keeps the latest upload on reload. ${A.tot.n} SKUs · loaded ${_e(F.asOf)}.</div>`;
 
-  return {html:`${head}${msg}${chartCard}${catCard}${itCard}${note}`, specs};
+  return {html:`${head}${msg}${chartCard}${catCard}${brandCard}${itCard}${note}`, specs};
 }
 
 /* ---------- Operations · Master Data (ERP-style item / BOM / routing master) ----------
@@ -2367,17 +2391,12 @@ document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('#sbSignInBtn')){openSb();return;}
   if(e.target.closest&&e.target.closest('#sbSignOutBtn')){sbSignOut();return;}
   if(e.target.closest&&e.target.closest('#ocsResetBtn')){try{localStorage.removeItem(OCS_KEY);}catch(_){}ocsMsg={type:'ok',text:'Reverted to the built-in forecast.'};showPage(curYr,'planning:fcst:ocs');return;}
-  const cr=e.target.closest&&e.target.closest('.ocs-cat-row');
-  if(cr){
-    const ci=cr.getAttribute('data-occ');
-    const open=cr.classList.toggle('open');
-    cr.setAttribute('aria-expanded',open?'true':'false');
-    document.querySelectorAll('.ocs-item-row[data-occ="'+ci+'"]').forEach(r=>{r.style.display=open?'grid':'none';});
-  }
+  const gr=e.target.closest&&e.target.closest('.ocs-grp-row');
+  if(gr){openOcsGroup(gr.getAttribute('data-ocg'));return;}
 });
-// keyboard access for the category drill-down rows
+// keyboard access for the category/brand drill-down rows
 document.addEventListener('keydown',e=>{
-  if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.classList&&e.target.classList.contains('ocs-cat-row')){
+  if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.classList&&e.target.classList.contains('ocs-grp-row')){
     e.preventDefault();e.target.click();
   }
 });
@@ -2578,6 +2597,41 @@ function openSku(cat,brand){
   skuOv.classList.add('open');
   document.body.style.overflow='hidden';
 }
+/* OCS category / brand drill-down — reuse the SKU modal to show the same 8-week per-SKU forecast as the inline expand did */
+function openOcsGroup(gkey){
+  if(!_ocsDrill||!_ocsDrill.groups[gkey])return;
+  const g=_ocsDrill.groups[gkey],{W,GC,wkLab,wkDates}=_ocsDrill;
+  const _e=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const wkCell=(u,rev)=>u?`<div class="mc-cell mc-dual">${fmtMoneyK(rev)}<span class="mc-sub">${fmtN(u)} u</span></div>`:`<div class="mc-cell muted">—</div>`;
+  const head=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Product</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
+  const body=g.items.map(it=>`<div class="mrow" style="grid-template-columns:${GC}">
+      <div class="mc-month"><span class="skf-d">${_e(it.name)}<small>${_e(it.sku)}</small></span></div>
+      ${it.ord.map((v,w)=>wkCell(v,it.rev[w])).join('')}
+      <div class="mc-cell teal">${fmtN(it.ord8)}</div>
+      <div class="mc-cell" style="color:var(--accent)">${it.rev8?fmtMoneyK(it.rev8):'<span class="muted">—</span>'}</div>
+    </div>`).join('');
+  const tot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}">
+      <div class="mc-month">Total · ${g.n} SKU${g.n!==1?'s':''}</div>
+      ${g.ord.map((v,w)=>wkCell(v,g.rev[w])).join('')}
+      <div class="mc-cell teal">${fmtN(g.ord8)}</div>
+      <div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(g.rev8)}</div>
+    </div>`;
+  let cap;
+  if(g.kind==='brand'){
+    const logo=BRAND_LOGOS[g.key];
+    cap=logo
+      ? `<span class="cap"><img src="${logo}" alt="${_e(g.key)} logo"></span>`
+      : `<span class="cap"><span class="brand-word">${_e(g.key)}${g.key==='CCHR'?'<small>Countryside Harvest Reserve</small>':''}</span></span>`;
+  }else{
+    const tok=OCS_CAT_TOK[g.key]||'--muted';
+    cap=`<span class="cap" style="height:auto"><span class="dot" style="width:15px;height:15px;background:var(${tok})"></span></span>`;
+  }
+  const sub=`${g.kind==='brand'?'Brand':'Category'} · ${g.n} SKU${g.n!==1?'s':''} · ${W}-week order forecast`;
+  skuOv.querySelector('.sku-modal').innerHTML=`<div class="sku-head">${cap}<div class="sku-titles"><div class="sku-cat">${_e(g.key)}</div><div class="sku-sub">${sub}</div></div><button class="sku-close" aria-label="Close">✕</button></div><div class="sku-body"><div class="mtable-scroll"><div class="mtable">${head}${body}${tot}</div></div></div>`;
+  skuOv.querySelector('.sku-close').addEventListener('click',closeSku);
+  skuOv.classList.add('open');
+  document.body.style.overflow='hidden';
+}
 document.addEventListener('click',e=>{
   const cap=e.target.closest&&e.target.closest('.brand-cap[data-cat]');
   if(cap)openSku(cap.dataset.cat,cap.dataset.brand);
@@ -2596,7 +2650,6 @@ const PDF_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 function exportBox(){
   return `<div class="exp-box" role="group" aria-label="Export this page">`+
     `<button type="button" class="exp-btn" data-export="excel" title="Download as Excel (.xlsx)" aria-label="Download as Excel">${XLS_SVG}<span>Excel</span></button>`+
-    `<button type="button" class="exp-btn" data-export="pdf" title="Print / save as PDF" aria-label="Print or save as PDF">${PDF_SVG}<span>PDF</span></button>`+
   `</div>`;
 }
 
