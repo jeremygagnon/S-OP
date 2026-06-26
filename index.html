@@ -1092,6 +1092,8 @@ function buildOperations(yr,page){
    customers (AGLC/MBLL/…) stay scaffolded until their feed is wired in. */
 const OCS_KEY='ocs_forecast_v1';
 let ocsMsg=null;
+let ocsFcstMode='order';            // OCS forecast table view: 'order' (when units are purchased) or 'delivery' (when they arrive)
+const OCS_DELIVERY_LAG=3;           // weeks between an OCS order being placed and the units being delivered
 const OCS_CAT_TOK={'Pre-Rolls':'--pre','Infused Pre-Rolls':'--ipr','Vapes':'--vape','Extracts':'--ext','Flower':'--flower'};
 /* Per-unit landed cost by OCS SKU — from the PO Master Tracker (col B Provincial SKU → col P Landed Cost, latest PO). Drives the $ columns on the OCS forecast. */
 const OCS_UNIT_COST={"102875_2x1g___":5.8,"104157_10x0.5g___":15.25,"104156_1x1g___":3.43,"105643_10x0.5g___":15.25,"103719_2x1g___":5.8,"102779_10x0.5g___":15.25,"310282_1x1g___":8.52,"103717_1x0.5g___":2.44,"103236_1x1g___":3.43,"105457_10x0.5g___":15.25,"103718_1x0.5g___":2.44,"103235_1x1g___":3.43,"312005_1x1g___":9.84,"105644_10x0.5g___":15.25,"310145_1g___":16.27,"302176_1g___":16.72,"312004_1x1g___":10.14,"302004_1g___":16.72,"302174_1g___":16.72,"302003_1g___":16.72,"102875_5x1g___":13.31,"312047_1x1g___":8.37,"312374_1x1g___":8.52,"300818_1g___":16.72,"302175_1g___":16.72,"310076_1g___":15.25};
@@ -1271,19 +1273,25 @@ function buildForecast(yr,key){
   }
   const _e=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
   const F=ocsLoad(),A=ocsAgg(F),W=A.W;
+  const isDel=ocsFcstMode==='delivery';          // delivery view: same quantities, dated to arrival (OCS_DELIVERY_LAG weeks after the order)
+  const shift=isDel?OCS_DELIVERY_LAG:0;
+  const NOUN=isDel?'Delivery':'Order', noun=isDel?'delivery':'order';
   const wkLab=Array.from({length:W},(_,i)=>'W'+(i+1));
   // Week dates derived from the forecast's data date (asOf). W1 = current week (its order is already placed); weeks start Monday.
+  // In delivery view every column's date is pushed out by the order→delivery lag, since the same units arrive that many weeks later.
   const _MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
   const _w1Mon=new Date(_asOfD);_w1Mon.setDate(_w1Mon.getDate()-((_w1Mon.getDay()+6)%7));
-  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(_w1Mon);d.setDate(d.getDate()+i*7);return _MON[d.getMonth()]+' '+d.getDate();});
+  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(_w1Mon);d.setDate(d.getDate()+(i+shift)*7);return _MON[d.getMonth()]+' '+d.getDate();});
   const specs=[];
 
   const title=`OCS`;
   const upIcon=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
   const btnCss=`font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1`;
+  const modeSlider=`<div class="seg-slider" id="ocsModeGroup" style="--n:2;--i:${isDel?1:0}" title="Order = when units are purchased · Delivery = when they arrive (${OCS_DELIVERY_LAG} wks later)"><span class="seg-thumb"></span><button class="seg${!isDel?' active':''}" data-ocsmode="order">Order</button><button class="seg${isDel?' active':''}" data-ocsmode="delivery">Delivery</button></div>`;
   const head=`<div class="page-head"><div class="page-title">${icon}${title}</div>
     <div class="head-right" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+      ${modeSlider}
       <span class="tb tb-nu">${_e(F.label)}${F.file?' · '+_e(F.file):''}</span>
       ${ocsAcctHtml()}
       <button id="ocsUpBtn" type="button" style="${btnCss}">${upIcon}Upload</button>
@@ -1296,14 +1304,14 @@ function buildForecast(yr,key){
 
   const stats=`<div class="stat-row stat-row-4">${
     Array.from({length:Math.min(4,W)},(_,i)=>
-      `<div class="stat"><div class="k">${wkLab[i]} · ${wkDates[i]}</div><div class="v" style="color:var(--accent)">${fmtMoneyK(A.wk.rev[i])}</div><div class="s">${fmtN(A.wk.ord[i])} order units</div></div>`
+      `<div class="stat"><div class="k">${wkLab[i]} · ${wkDates[i]}</div><div class="v" style="color:var(--accent)">${fmtMoneyK(A.wk.rev[i])}</div><div class="s">${fmtN(A.wk.ord[i])} ${noun} units</div></div>`
     ).join('')
   }</div>`;
 
   const chartCard=`<div class="month-card collapsible">
     <div class="mc-head" role="button" tabindex="0" aria-expanded="true">
       <div class="mc-name"><span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span><span class="dot" style="background:var(--accent)"></span>${W}-Week Forecast Summary</div>
-      <div class="badges"><span class="tb tb-vol">${fmtN(A.tot.ord8)} order units</span></div>
+      <div class="badges"><span class="tb tb-vol">${fmtN(A.tot.ord8)} ${noun} units</span></div>
     </div>
     <div class="cat-collapse">${stats}</div>
   </div>`;
@@ -1360,12 +1368,12 @@ function buildForecast(yr,key){
   </div>`;
   const caret=`<span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
   const catCard=`<div class="month-card collapsible" style="margin-top:16px">
-    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Order Forecast by Category &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox()}</div></div>
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>${NOUN} Forecast by Category &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} ${noun} value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox()}</div></div>
     <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${catHead}${grpRows('cat',catGroups)}${grpTot}</div></div></div>
   </div>`;
   const brandHead=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Brand</div>${wkLab.map((w,i)=>`<div>${w}<span style="display:block;font-size:8.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-top:2px">${wkDates[i]}</span></div>`).join('')}<div>8-wk</div><div>Revenue</div></div>`;
   const brandCard=`<div class="month-card collapsible" style="margin-top:16px">
-    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Order Forecast by Brand &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} order value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox('brand')}</div></div>
+    <div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>${NOUN} Forecast by Brand &amp; Week</div><div class="badges"><span class="tb tb-up">${fmtMoneyK(A.tot.rev8)} ${noun} value</span><span class="tb tb-nu">click a row for SKUs</span>${exportBox('brand')}</div></div>
     <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${brandHead}${grpRows('brand',brandGroups)}${grpTot}</div></div></div>
   </div>`;
 
@@ -1391,7 +1399,7 @@ function buildForecast(yr,key){
     <div class="cat-collapse"><div class="mtable-scroll"><div class="mtable">${itHead}${itBody}</div></div></div>
   </div>`;
 
-  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: OCS “Order and Sales Forecast by Item Level” export (warehouse DC001, vendor MERA CANNABIS CORP., released available items). Order forecast = units OCS plans to purchase per week; sales forecast = their projected sell-through. Week 1 order is typically blank (already placed). Use <b>Upload</b> to drop in the new .xlsx each week — it’s parsed in your browser and saved locally, so the page keeps the latest upload on reload. ${A.tot.n} SKUs · loaded ${_e(F.asOf)}.</div>`;
+  const note=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: OCS “Order and Sales Forecast by Item Level” export (warehouse DC001, vendor MERA CANNABIS CORP., released available items). Order forecast = units OCS plans to purchase per week; sales forecast = their projected sell-through. Week 1 order is typically blank (already placed). Use <b>Upload</b> to drop in the new .xlsx each week — it’s parsed in your browser and saved locally, so the page keeps the latest upload on reload.${isDel?` <b style="color:var(--accent)">Delivery view:</b> identical quantities and value, dated to arrival — ${OCS_DELIVERY_LAG} weeks after each order is placed.`:''} ${A.tot.n} SKUs · loaded ${_e(F.asOf)}.</div>`;
 
   return {html:`${head}${msg}${chartCard}${catCard}${brandCard}${itCard}${note}`, specs};
 }
@@ -1780,8 +1788,10 @@ function buildOverviewForecast(yr,mon,st){
 }
 
 /* ---------- crystal ball · forward projection ---------- */
-// Projects upcoming months from each category's 2025 seasonal shape scaled by its realized 2026 momentum,
-// shown against the official plan (DATA.f) with a variance-based confidence range. (OCS overlay pending export.)
+// Primary driver is the OCS 8-week order forecast: its monthly run-rate sets each category's near-term level,
+// carried across the horizon by the 2025 seasonal shape and tempered by realized momentum (Mera + whole-market
+// YoY). Categories with no OCS orders fall back to the pure momentum model. Shown against the official plan
+// (DATA.f) with a variance-based confidence range.
 function buildCrystal(yr){
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="7"/><path d="M9.5 6.6a3.2 3.2 0 0 1 3-1.4"/><path d="M7 19h10"/><path d="M9.5 21h5"/></svg>`;
   const yrs=`<div class="seg-slider" id="yrGroup" style="--n:2;--i:${yr==='2026'?1:0}"><span class="seg-thumb"></span><button class="seg${yr==='2025'?' active':''}" data-yr="2025">2025</button><button class="seg${yr==='2026'?' active':''}" data-yr="2026">2026</button></div>`;
@@ -1801,6 +1811,23 @@ function buildCrystal(yr){
   const lastCompIdx=baseIdx[baseIdx.length-1];
   const projMonths=MONTHS.filter(m=>STATUS[yr]?.[m]==='p'||STATUS[yr]?.[m]==='f'); // bridge spans the live month onward
 
+  // ---- OCS 8-week order forecast = the PRIMARY near-term driver ----
+  // The freshest demand signal we have is the OCS order forecast, so it sets the level; each category's
+  // 2025 monthly shape carries that level across the rest of the horizon, with momentum only tempering it.
+  const OCS_DRIVE=0.75;                       // weight on the OCS order signal (remainder stays on momentum)
+  const WPM=52.1786/12;                        // average weeks per month
+  const anchorIdx=MONTHS.indexOf(future[0]);   // OCS window lands mostly on the first future month
+  const _ocsF=ocsLoad(), _ocsA=ocsAgg(_ocsF);
+  const _ocsYr=String(new Date((_ocsF.asOf||'')+'T00:00:00').getFullYear());
+  const ocsOn=(_ocsYr===String(yr));           // only drive with orders when the forecast's year matches
+  const ocsMoByCat={}, ocsOrd8ByCat={};
+  if(ocsOn)_ocsA.cats.forEach(c=>{
+    let aw=0;for(let w=0;w<_ocsA.W;w++)if((c.ord[w]||0)>0)aw++;  // count active order weeks (W1 is 0 — already placed)
+    if(aw<1)aw=_ocsA.W;
+    ocsMoByCat[c.cat]=(c.ord8/aw)*WPM;          // monthly order run-rate from the active weeks
+    ocsOrd8ByCat[c.cat]=c.ord8;
+  });
+
   const cats=TYPES.map(t=>{
     const cc=catColor(t.key);
     const s25=MONTHS.map(m=>DATA[prevYr]?.[t.key]?.[m]?.s??0);
@@ -1817,8 +1844,23 @@ function buildCrystal(yr){
     baseIdx.forEach(i=>{const d=DATA[yr][t.key][MONTHS[i]];if(d){ytdS+=d.s;if(d.d!=null){ytdD+=d.d;hasD=true;}if(d.c!=null){ytdC+=d.c;hasC=true;}}});
     const price=(hasD&&ytdS>0)?ytdD/ytdS:null;   // $/unit from completed 2026 months
     const upc=(hasC&&ytdC>0)?ytdS/ytdC:null;      // units per case
+    const ocsMo=(ocsOn&&(t.key in ocsMoByCat))?ocsMoByCat[t.key]:null;     // null → category stays on the pure momentum model (e.g. Flower)
+    const ocs8=(ocsOn&&(t.key in ocsOrd8ByCat))?ocsOrd8ByCat[t.key]:null;
+    const anchorSeed=s25[anchorIdx];
+    const cv=gBlend>0?Math.min(sd/gBlend,0.5):0.15;                          // relative band, matched to the model's own variance
     const proj={};
-    projMonths.forEach(m=>{const i=MONTHS.indexOf(m);const seed=s25[i];proj[m]={mid:seed*gBlend,lo:seed*Math.max(0,gBlend-sd),hi:seed*(gBlend+sd),plan:hasF(yr,t.key,m)?DATA[yr][t.key][m].f:null};});
+    projMonths.forEach(m=>{
+      const i=MONTHS.indexOf(m), seed=s25[i], model=seed*gBlend, plan=hasF(yr,t.key,m)?DATA[yr][t.key][m].f:null;
+      let mid,lo,hi;
+      if(ocsMo!=null&&anchorSeed>0){
+        const sf=seed/anchorSeed;                                            // 2025 seasonal shape, relative to the anchor month
+        mid=OCS_DRIVE*(ocsMo*sf)+(1-OCS_DRIVE)*model;                        // OCS orders lead, momentum tempers
+        lo=Math.max(0,mid*(1-cv));hi=mid*(1+cv);
+      }else{
+        mid=model;lo=seed*Math.max(0,gBlend-sd);hi=seed*(gBlend+sd);          // unchanged momentum model
+      }
+      proj[m]={mid,lo,hi,plan};
+    });
     let pmid=0,plo=0,phi=0,pplan=0,hasPlan=false;
     future.forEach(m=>{const p=proj[m];pmid+=p.mid;plo+=p.lo;phi+=p.hi;if(p.plan!=null){pplan+=p.plan;hasPlan=true;}});
     // per-category chart series: 2025 actual (full), 2026 sold (complete months only), plan, and projection bridged from the last complete month
@@ -1828,7 +1870,7 @@ function buildCrystal(yr){
     const cProj=MONTHS.map(()=>null);
     cProj[lastCompIdx]=cActual[lastCompIdx];
     projMonths.forEach(m=>{cProj[MONTHS.indexOf(m)]=proj[m].mid;});
-    return {key:t.key,cc,cid,price,upc,proj,prev:s25,actual:cActual,plan:cPlan,cproj:cProj,pmid,plo,phi,pplan:hasPlan?pplan:null,projRev:price!=null?pmid*price:null,projCas:upc!=null?pmid/upc:null,gInt:g,gMkt,gBlend,oc};
+    return {key:t.key,cc,cid,price,upc,proj,prev:s25,actual:cActual,plan:cPlan,cproj:cProj,pmid,plo,phi,pplan:hasPlan?pplan:null,projRev:price!=null?pmid*price:null,projCas:upc!=null?pmid/upc:null,ocsMo,ocs8,gInt:g,gMkt,gBlend,oc};
   });
 
   let Tu=0,Tlo=0,Thi=0,Trev=0,Tcas=0,Tplan=0,hasRev=false,hasCas=false,hasPlan=false;
@@ -1862,7 +1904,7 @@ function buildCrystal(yr){
     </div>
     <div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="${heroCid}" role="img" aria-label="Total units 2025 actual, 2026 sold, plan and Crystal Ball projection"></canvas></div></div>
     ${legend}
-    <div class="mom-cap" style="padding:0 20px 16px">Projection blends Mera's own realized ${base.length}-month YoY momentum (${Math.round(OCS._meta.wInt*100)}%) with the whole Ontario market's category momentum (${Math.round(OCS._meta.wMkt*100)}%), drawn from ${OCS._meta.nMo} months of OCS province-wide sell-through (${OCS._meta.from}→${OCS._meta.to}); each category's 2025 monthly shape is scaled by that blend. Range reflects month-to-month variance in Mera's momentum. Mera now holds ${(OCS._all.shr*100).toFixed(1)}% unit share of these categories, down from ${(OCS._all.shrP*100).toFixed(1)}% a year ago.</div>
+    <div class="mom-cap" style="padding:0 20px 16px">${ocsOn?`The OCS 8-week order forecast is now the primary driver (~${Math.round(OCS_DRIVE*100)}%): each category's monthly order run-rate sets the near-term level, carried across ${horizon} by its 2025 seasonal shape and tempered (${Math.round((1-OCS_DRIVE)*100)}%) by momentum. Categories with no OCS orders on file (e.g. Flower) stay on the momentum model. `:''}Momentum itself blends Mera's own realized ${base.length}-month YoY (${Math.round(OCS._meta.wInt*100)}%) with the whole Ontario market's category momentum (${Math.round(OCS._meta.wMkt*100)}%), drawn from ${OCS._meta.nMo} months of OCS province-wide sell-through (${OCS._meta.from}→${OCS._meta.to}); each category's 2025 monthly shape is scaled by that blend. Range reflects month-to-month variance in that momentum. Mera now holds ${(OCS._all.shr*100).toFixed(1)}% unit share of these categories, down from ${(OCS._all.shrP*100).toFixed(1)}% a year ago.</div>
   </div>`;
 
   const boxes=cats.map(c=>{
@@ -1876,6 +1918,10 @@ function buildCrystal(yr){
       const myCol=myoy>=0?'var(--teal)':'var(--coral)', shCol=up?'var(--teal)':'var(--coral)';
       mktLine=`<div class="ocs-sig"><span>OCS market <b style="color:${myCol}">${signPct(myoy)}</b> YoY</span><span>Mera share ${shr.toFixed(1)}% <b style="color:${shCol}">${up?'▲':'▼'} ${Math.abs(dShr).toFixed(1)}pp</b></span></div>`;
     }
+    let ocsLine='';
+    if(c.ocs8!=null){
+      ocsLine=`<div class="ocs-sig"><span>OCS 8-wk orders <b style="color:var(--accent)">${fmtK(c.ocs8)} u</b></span><span>≈ ${fmtK(c.ocsMo)}/mo · drives <b>${Math.round(OCS_DRIVE*100)}%</b></span></div>`;
+    }
     return `<div class="prod">
       <div class="prod-top"><div class="prod-name"><span class="dot" style="background:${c.cc}"></span>${c.key}</div>${chip}</div>
       <div class="mom-spark"><canvas id="${c.cid}" role="img" aria-label="${c.key} units · 2026 sold and Crystal Ball projection"></canvas></div>
@@ -1885,7 +1931,7 @@ function buildCrystal(yr){
         <div class="col mid"><div class="k">Proj. $</div><div class="vv" style="color:var(--accent)">${c.projRev!=null?fmtMoneyK(c.projRev):'—'}</div></div>
         <div class="col"><div class="k">Proj. cases</div><div class="vv">${c.projCas!=null?fmtN(c.projCas):'—'}</div></div>
       </div>
-      ${mktLine}
+      ${ocsLine}${mktLine}
     </div>`;
   }).join('');
   const catSec=`<div class="eyebrow e-cat">Forward forecast · ${horizon} · by category · actual vs projection</div><div class="prod-row">${boxes}</div>`;
@@ -2387,6 +2433,15 @@ document.getElementById('nav').addEventListener('click',e=>{
   const b=e.target.closest('.nav-item');if(!b)return;
   showPage(curYr,b.dataset.page);
 });
+// OCS forecast: Order ⇄ Delivery view toggle (same quantities, dates shifted by the order→delivery lag)
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('#ocsModeGroup .seg[data-ocsmode]');
+  if(!b)return;
+  const m=b.dataset.ocsmode;
+  if(m===ocsFcstMode)return;
+  ocsFcstMode=m;
+  showPage(curYr,'planning:fcst:ocs');
+});
 // OCS forecast: weekly .xlsx upload + reset (parsed client-side, cached in localStorage)
 document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('#ocsUpBtn')){const fi=document.getElementById('ocsFileInput');if(fi)fi.click();return;}
@@ -2628,7 +2683,7 @@ function openOcsGroup(gkey){
     const tok=OCS_CAT_TOK[g.key]||'--muted';
     cap=`<span class="cap" style="height:auto"><span class="dot" style="width:15px;height:15px;background:var(${tok})"></span></span>`;
   }
-  const sub=`${g.kind==='brand'?'Brand':'Category'} · ${g.n} SKU${g.n!==1?'s':''} · ${W}-week order forecast`;
+  const sub=`${g.kind==='brand'?'Brand':'Category'} · ${g.n} SKU${g.n!==1?'s':''} · ${W}-week ${ocsFcstMode==='delivery'?'delivery':'order'} forecast`;
   skuOv.querySelector('.sku-modal').innerHTML=`<div class="sku-head">${cap}<div class="sku-titles"><div class="sku-cat">${_e(g.key)}</div><div class="sku-sub">${sub}</div></div><button class="sku-close" aria-label="Close">✕</button></div><div class="sku-body"><div class="mtable-scroll"><div class="mtable">${head}${body}${tot}</div></div></div>`;
   skuOv.querySelector('.sku-close').addEventListener('click',closeSku);
   skuOv.classList.add('open');
@@ -2729,11 +2784,12 @@ function brandExportModel(yr,brand){
 // OCS "Order Forecast by Category/Brand & Week" — mirrors the on-screen table: group rollup rows + SKU drill-down + total, per-week units and per-week order revenue.
 function ocsForecastExportModel(kind){
   const isBrand=kind==='brand';
+  const isDel=ocsFcstMode==='delivery', shift=isDel?OCS_DELIVERY_LAG:0, NOUN=isDel?'Delivery':'Order', noun=isDel?'delivery':'order';
   const F=ocsLoad(),A=ocsAgg(F),W=A.W;
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const asOfD=new Date((F.asOf||new Date().toISOString().slice(0,10))+'T00:00:00');
   const w1Mon=new Date(asOfD);w1Mon.setDate(w1Mon.getDate()-((w1Mon.getDay()+6)%7));
-  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(w1Mon);d.setDate(d.getDate()+i*7);return MON[d.getMonth()]+' '+d.getDate();});
+  const wkDates=Array.from({length:W},(_,i)=>{const d=new Date(w1Mon);d.setDate(d.getDate()+(i+shift)*7);return MON[d.getMonth()]+' '+d.getDate();});
   const groupOf=isBrand?(it=>OCS_SKU_BRAND[it.sku]||'Other'):(it=>it.cat);
   const order=isBrand?OCS_BRAND_ORDER:['Pre-Rolls','Infused Pre-Rolls','Vapes','Extracts','Flower'];
   const gm={};
@@ -2749,7 +2805,7 @@ function ocsForecastExportModel(kind){
   const cols=[{label:(isBrand?'Brand / Item':'Category / Item'),fmt:'text'}];
   for(let w=0;w<W;w++){cols.push({label:'W'+(w+1)+' units · '+wkDates[w],fmt:'int'});cols.push({label:'W'+(w+1)+' $ · '+wkDates[w],fmt:'money'});} // units paired next to revenue for each week
   cols.push({label:'8-wk Units',fmt:'int'});
-  cols.push({label:'Order Value ($)',fmt:'money'});
+  cols.push({label:NOUN+' Value ($)',fmt:'money'});
   const interleave=(label,units,rev,uTot,rTot)=>{const row=[label];for(let w=0;w<W;w++){row.push(units[w],rev[w]);}row.push(uTot,rTot);return row;};
   const rows=[];
   groups.forEach(g=>{
@@ -2757,9 +2813,9 @@ function ocsForecastExportModel(kind){
     g.items.forEach(it=>{rows.push(interleave('    '+it.name+' — '+it.sku,it.ord,it.ord.map(v=>v*it.uc),it.o8,it.o8*it.uc));});
   });
   const totals=[interleave('Total · '+A.tot.n+' SKUs',A.wk.ord,A.wk.rev,A.tot.ord8,A.tot.rev8)];
-  return {title:'OCS · Order Forecast by '+(isBrand?'Brand':'Category')+' & Week',
-    subtitle:'DC001 · '+W+'-week order & sales forecast · '+(F.label||'')+(F.file?' · '+F.file:''),
-    filename:'Mera_OCS_'+(isBrand?'Brand':'Order')+'-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
+  return {title:'OCS · '+NOUN+' Forecast by '+(isBrand?'Brand':'Category')+' & Week',
+    subtitle:'DC001 · '+W+'-week '+noun+(isDel?' (orders dated +'+OCS_DELIVERY_LAG+' wks to arrival)':' & sales')+' forecast · '+(F.label||'')+(F.file?' · '+F.file:''),
+    filename:'Mera_OCS_'+(isBrand?'Brand':'Category')+'-'+NOUN+'-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
     sheet:isBrand?'OCS Brand Forecast':'OCS Order Forecast',cols,rows,totals};
 }
 function currentExportModel(scope){
