@@ -1028,10 +1028,11 @@ function buildSkuRank(yr){
   const metricSeg=`<div class="seg-slider rk-metric" id="rankMetric" data-metric="${metric}" style="--n:2;--i:${metric==='un'?1:0}"><span class="seg-thumb"></span><button class="seg${metric==='rev'?' active':''}" data-rk="rev">Revenue</button><button class="seg${metric==='un'?' active':''}" data-rk="un">Units</button></div>`;
   const toolbar=`<div class="rk-toolbar"><div class="rk-filter" id="rankFilter">${allChip}${chips}</div><div class="rk-controls"><span class="rk-when">${when}</span>${groupSeg}${periodSeg}${metricSeg}</div></div>`;
   const bodyFor=(g,key)=>{
-    const sorted=[...g.skus].sort((x,y)=>y[key]-x[key]);
-    const max=sorted.length?sorted[0][key]:0;
+    const dk=key==='un'?'u':'rev';
+    const sorted=[...g.skus].sort((x,y)=>y[dk]-x[dk]);
+    const max=sorted.length?sorted[0][dk]:0;
     const rows=sorted.map((s,i)=>{
-      const share=max>0?(s[key]/max*100):0,cc=catColor(s.cat),tc=i===0?' top1':'';
+      const share=max>0?(s[dk]/max*100):0,cc=catColor(s.cat),tc=i===0?' top1':'';
       const sub=groupBy==='cat'?`${s.brand}${s.k?` · ${s.k}`:''}`:(s.k||'');
       return `<div class="rk-row${tc}"><span class="rk-fill" style="width:${share.toFixed(1)}%;background:${cc}"></span><div class="rk-rank">${i+1}</div><div class="rk-name"><span class="dot" style="background:${cc}"></span><span class="rk-d">${s.d}${sub?`<small>${sub}</small>`:''}</span></div><div class="rk-val rev${key==='rev'?' on':''}">${fmtMoneyK(s.rev)}</div><div class="rk-val un${key==='un'?' on':''}">${fmtN(s.u)}</div></div>`;
     }).join('');
