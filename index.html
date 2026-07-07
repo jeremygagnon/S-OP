@@ -94,7 +94,7 @@ body{padding:28px clamp(16px,3vw,40px) 64px;max-width:1320px;margin:0 auto;}
 .brand-logo{height:38px;width:auto;display:block;flex-shrink:0;}
 .brand-div{width:1px;height:33px;background:var(--line);flex-shrink:0;}
 .brand h1{font-size:26.5px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;}
-.period{display:flex;align-items:center;gap:14px;}
+.period{display:flex;align-items:center;gap:14px;margin-left:auto;}
 .seg-slider{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);background:var(--ctrl-bg);border-radius:9px;padding:3px;border:1px solid var(--line);}
 .seg-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/var(--n));border-radius:6px;background:var(--accent-soft);box-shadow:0 1px 2px rgba(0,0,0,.18);transform:translateX(calc(var(--i,0)*100%));transition:transform .24s cubic-bezier(.4,0,.2,1);pointer-events:none;}
 .seg{position:relative;z-index:1;font-size:12px;padding:6px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:var(--font);font-weight:500;transition:color .15s;text-align:center;white-space:nowrap;}
@@ -102,9 +102,15 @@ body{padding:28px clamp(16px,3vw,40px) 64px;max-width:1320px;margin:0 auto;}
 .seg.active{color:var(--accent);}
 .seg:disabled{cursor:not-allowed;color:var(--faint);opacity:.5;}
 .seg:disabled:hover{color:var(--faint);}
+.mon-slider.ab-slider .seg.ab-pick{color:var(--accent);background:var(--accent-soft);box-shadow:0 1px 2px rgba(0,0,0,.18);font-weight:700;} /* A/B mode has no moving thumb — the two chosen months get a static pill each */
 #cmpGroup.hidden{display:none;}
 #cmpGroup .seg,#yrGroup .seg{font-size:11px;padding:6px 9px;letter-spacing:0;} /* slimmer comparison/year segments so the control cluster sits beside the title, not below */
 #modeGroup{margin-left:6px;} /* Sales / Operations / Planning mode switch, beside the title */
+#basisGroup .seg{font-size:11px;padding:6px 11px;letter-spacing:0;} /* $ basis switch (Landed Cost / Net Rev), left of the cash lock */
+#basisGroup .seg.active{color:var(--teal-bright);}
+#basisGroup .seg-thumb{background:rgba(61,220,138,.14);}
+.basis-note{margin:2px 0 16px;padding:9px 13px;border:1px solid var(--line);border-left:2px solid var(--teal-bright);border-radius:8px;background:rgba(61,220,138,.05);color:var(--muted);font-size:11.5px;line-height:1.5;}
+.basis-note b{color:var(--ink-2);font-weight:600;}
 .theme-toggle{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:color .15s,border-color .15s,background .15s;flex-shrink:0;}
 .theme-toggle:hover{color:var(--ink);background:var(--accent-soft);}
 
@@ -297,6 +303,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 .tb-up{background:rgba(61,220,138,.14);color:var(--teal-bright);}
 .tb-dn{background:rgba(255,107,92,.14);color:var(--coral);}
 .tb-nu{background:rgba(135,142,160,.12);color:var(--muted);}
+.tb-rev{background:rgba(61,220,138,.13);color:var(--teal-bright);}
 
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line);}
 .stat-row.stat-row-4{grid-template-columns:repeat(4,1fr);}
@@ -579,6 +586,9 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
 }
 /* ---- data export (Excel / PDF) ---- */
 .head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;}
+.page-head.cat-page-head{flex-direction:column;align-items:stretch;gap:12px;}
+.cat-head-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.cat-ctrl-row{display:flex;justify-content:flex-end;}
 #exportSlot{display:inline-flex;}
 #exportSlot.hidden{display:none;}
 .exp-box{display:inline-flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:4px 5px;flex-shrink:0;}
@@ -616,6 +626,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
     <div class="seg-slider" id="modeGroup" style="--n:3;--i:0"><span class="seg-thumb"></span><button class="seg active" data-mode="sales">Sales</button><button class="seg" data-mode="operations">Operations</button><button class="seg" data-mode="planning">Planning</button></div>
   </div>
   <div class="period">
+    <div class="seg-slider" id="basisGroup" style="--n:2;--i:0" title="Dollar basis — Landed Cost (invoice price to the board) vs Net Revenue (recognized after board fees + excise)"><span class="seg-thumb"></span><button class="seg active" data-basis="landed">Landed Cost</button><button class="seg" data-basis="netrev">Net Rev</button></div>
     <button class="theme-toggle" id="cashToggle" title="Reveal $ amounts" aria-label="Reveal dollar amounts"></button>
     <span id="exportSlot"></span>
     <button class="theme-toggle" id="themeToggle" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"></button>
@@ -742,8 +753,18 @@ function cmpPair(list,yr){
     if(base.lm&&completeMonths(py).includes(base.lm))return {lm:base.lm,pm:base.lm,pmYr:py,idx:base.idx,mode:'yoy'};
     return {lm:base.lm,pm:null,pmYr:null,idx:base.idx,mode:'yoy'};
   }
+  if(cmpMode==='ab'){ // custom: two user-chosen closed months in the same year, ordered chronologically (earlier = baseline)
+    const picks=abPick.filter(m=>list.includes(m));
+    if(picks.length===2){
+      const o=[...picks].sort((a,b)=>MONTHS.indexOf(a)-MONTHS.indexOf(b));
+      return {lm:o[1],pm:o[0],pmYr:String(yr),idx:list.indexOf(o[1]),mode:'ab'};
+    }
+    return {lm:base.lm,pm:base.pm,pmYr:base.pmYr,idx:base.idx,mode:'mom'}; // mid-selection: fall back to MoM until both months are picked
+  }
   return {lm:base.lm,pm:base.pm,pmYr:base.pmYr,idx:base.idx,mode:'mom'};
 }
+// Default the A/B pair to the two latest closed months (matches the MoM default) so switching into A/B shows something immediately.
+function seedAb(yr){const cm=completeMonths(yr);abPick=cm.length>=2?[cm[cm.length-2],cm[cm.length-1]]:[];}
 // The month a forecast-mode view focuses on: an explicit pick, else the live (mid-) month, else the latest complete month.
 function fcstFocus(yr){
   if(selMonth&&STATUS[yr]?.[selMonth])return selMonth;
@@ -772,6 +793,10 @@ function monStatus(yr,m){
 function monBtns(yr,ov){
   const list=completeMonths(yr);if(list.length<2)return'';
   const hasPrevYr=completeMonths(String(Number(yr)-1)).length>0;
+  if(cmpMode==='ab'){ // A/B mode (incl. exec summary): any two closed months are pickable (two-tap); both picks stay lit, no moving thumb
+    const picks=new Set(abPick.filter(m=>list.includes(m)));
+    return `<div class="mon-btns"><div class="seg-slider mon-slider ab-slider" style="--n:12">${MONTHS.map(m=>`<button class="seg${picks.has(m)?' ab-pick':''}" data-mon="${m}"${list.includes(m)?'':' disabled'}>${m}</button>`).join('')}</div></div>`;
+  }
   const active=activeMon(yr,ov);
   // exec summary & forecast mode: every planned month is selectable; else only complete months
   const sel=(ov||cmpMode==='fcst')?new Set(MONTHS.filter(m=>STATUS[yr]?.[m])):new Set(hasPrevYr?list:list.slice(1));
@@ -782,8 +807,8 @@ function monBtns(yr,ov){
 function ctrlBox(yr,ov){
   const ms=monStatus(yr,activeMon(yr,ov));
   const statPill=ms?`<div class="mon-stat ${ms.cls}" title="Selected month is ${ms.label.toLowerCase()}">${ms.label}</div>`:'';
-  const cmpI=cmpMode==='fcst'?2:cmpMode==='yoy'?1:0;
-  const cmp=`<div class="seg-slider" id="cmpGroup" style="--n:3;--i:${cmpI}"><span class="seg-thumb"></span><button class="seg${cmpMode==='mom'?' active':''}" data-cmp="mom" title="Month-over-month — selected month vs the prior month">MoM</button><button class="seg${cmpMode==='yoy'?' active':''}" data-cmp="yoy" title="Year-over-year — selected month vs the same month last year">YoY</button><button class="seg${cmpMode==='fcst'?' active':''}" data-cmp="fcst" title="vs Forecast — current month against plan, plus the forward outlook">vs Fcst</button></div>`;
+  const cmpI=cmpMode==='ab'?3:cmpMode==='fcst'?2:cmpMode==='yoy'?1:0;
+  const cmp=`<div class="seg-slider" id="cmpGroup" style="--n:4;--i:${cmpI}"><span class="seg-thumb"></span><button class="seg${cmpMode==='mom'?' active':''}" data-cmp="mom" title="Month-over-month — selected month vs the prior month">MoM</button><button class="seg${cmpMode==='yoy'?' active':''}" data-cmp="yoy" title="Year-over-year — selected month vs the same month last year">YoY</button><button class="seg${cmpMode==='fcst'?' active':''}" data-cmp="fcst" title="vs Forecast — current month against plan, plus the forward outlook">vs Fcst</button><button class="seg${cmpMode==='ab'?' active':''}" data-cmp="ab" title="A/B — compare any two closed months you tap on the month bar">A/B</button></div>`;
   const yrs=`<div class="seg-slider" id="yrGroup" style="--n:2;--i:${yr==='2026'?1:0}"><span class="seg-thumb"></span><button class="seg${yr==='2025'?' active':''}" data-yr="2025">2025</button><button class="seg${yr==='2026'?' active':''}" data-yr="2026">2026</button></div>`;
   return `<div class="ctrl-box">${statPill}${monBtns(yr,ov)}${cmp}${yrs}</div>`;
 }
@@ -908,23 +933,24 @@ function navMonths(yr){return MONTHS.filter(m=>STATUS[yr][m]==='c'||STATUS[yr][m
 /* ---------- overview page ---------- */
 function buildOverview(yr){
   const selSt=selMonth?STATUS[yr]?.[selMonth]:null;
-  if(selSt==='p'||selSt==='f')return buildOverviewForecast(yr,selMonth,selSt); // a future month is picked → per-category forecast boxes
+  if(cmpMode!=='ab'&&(selSt==='p'||selSt==='f'))return buildOverviewForecast(yr,selMonth,selSt); // a future month is picked → per-category forecast boxes (A/B compares two closed months, so it skips this)
   const S=computeSummary(yr);
-  const {lm,pm,pmYr,idx:mi}=momPair(S.months,yr);
+  const {lm,pm,pmYr,idx:mi,mode}=cmpPair(S.months,yr);
+  const cmpLbl=mode==='yoy'?'YoY':mode==='ab'?'A/B':'MoM';
   const pmLab=pmLabel(pm,pmYr,yr);
   const yy=pmYr?('’'+String(pmYr).slice(-2)):'';
   let mS=0,pS=0,mD=0,pD=0,mC=0,pC=0,mHasD=false,pHasD=false,mHasC=false,pHasC=false;
   TYPES.forEach(t=>{
     const d=DATA[yr][t.key][lm];
-    if(d){mS+=d.s;if(d.d!=null){mD+=d.d;mHasD=true;}if(d.c!=null){mC+=d.c;mHasC=true;}}
-    if(pm){const p=DATA[pmYr]?.[t.key]?.[pm];if(p){pS+=p.s;if(p.d!=null){pD+=p.d;pHasD=true;}if(p.c!=null){pC+=p.c;pHasC=true;}}}
+    if(d){mS+=d.s;const dv=catRevM(yr,t.key,lm);if(dv!=null){mD+=dv;mHasD=true;}if(d.c!=null){mC+=d.c;mHasC=true;}}
+    if(pm){const p=DATA[pmYr]?.[t.key]?.[pm];if(p){pS+=p.s;const pv=catRevM(pmYr,t.key,pm);if(pv!=null){pD+=pv;pHasD=true;}if(p.c!=null){pC+=p.c;pHasC=true;}}}
   });
   const uMom=pS>0?(mS-pS)/pS*100:null;
   const dMom=(mHasD&&pHasD&&pD>0)?(mD-pD)/pD*100:null;
   const cMom=(mHasC&&pHasC&&pC>0)?(mC-pC)/pC*100:null;
   const momCol=v=>v==null?'var(--ink)':v>=0?'var(--teal)':'var(--coral)';
   const cmpBlock=(prevStr,curStr,col)=>`<div class="kpi-cmp"><div class="cmp-side"><div class="cmp-mon">${pmLab||'—'}</div><div class="cmp-val">${prevStr}</div></div><div class="cmp-arrow">→</div><div class="cmp-side"><div class="cmp-mon">${mf(lm)}</div><div class="cmp-val"${col?` style="color:${col}"`:''}>${curStr}</div></div></div>`;
-  const momFoot=v=>v==null?'<span class="sub">no prior month</span>':`<span class="pct" style="color:${momCol(v)}">${signPct(v)} MoM</span>`;
+  const momFoot=v=>v==null?'<span class="sub">no prior month</span>':`<span class="pct" style="color:${momCol(v)}">${signPct(v)} ${cmpLbl}</span>`;
   const priorMissFoot=unit=>`<span class="sub">${pm?`no ${mf(pm)} ${yy} ${unit}`:'not in source'}</span>`;
   const kpi=`
     <div class="eyebrow e-all">All categories</div>
@@ -954,7 +980,7 @@ function buildOverview(yr){
   const specs=[];
   const momCards=TYPES.map(t=>{
     const series=S.months.map(m=>DATA[yr][t.key][m]?.s||0);
-    const latest=series[mi]||0, prev=mi>0?series[mi-1]:(pm?(DATA[pmYr]?.[t.key]?.[pm]?.s??null):null);
+    const latest=series[mi]||0, prev=pm?(DATA[pmYr]?.[t.key]?.[pm]?.s??null):null; // resolve the baseline from the comparison month directly (correct for MoM and non-adjacent A/B picks)
     const mom=prev!=null&&prev>0?(latest-prev)/prev*100:null;
     const cls=mom==null?'nu':mom>=0?'over':'under';
     const cid=`ov-${yr}-${t.key.replace(/[^a-z]/gi,'')}`;
@@ -962,10 +988,10 @@ function buildOverview(yr){
     const fseries=S.months.map(m=>hasF(yr,t.key,m)?DATA[yr][t.key][m].f:null);
     const hasFcst=fseries.some(v=>v!=null);
     let ytdS=0,ytdD=0,ytdC=0,ytdHasD=false,ytdHasC=false;
-    S.months.forEach(m=>{const dd=DATA[yr][t.key][m];if(dd){ytdS+=dd.s;if(dd.d!=null){ytdD+=dd.d;ytdHasD=true;}if(dd.c!=null){ytdC+=dd.c;ytdHasC=true;}}});
+    S.months.forEach(m=>{const dd=DATA[yr][t.key][m];if(dd){ytdS+=dd.s;const dv=catRevM(yr,t.key,m);if(dv!=null){ytdD+=dv;ytdHasD=true;}if(dd.c!=null){ytdC+=dd.c;ytdHasC=true;}}});
     specs.push({cid,kind:'spark',labels:S.months.map(mf),vals:series,fvals:hasFcst?fseries:null,color:cc});
     return `<div class="prod">
-      <div class="prod-top"><div class="prod-name"><span class="dot" style="background:${cc}"></span>${t.key}</div><span class="chip ${cls}">${mom!=null?signPct(mom)+' MoM':'—'}</span></div>
+      <div class="prod-top"><div class="prod-name"><span class="dot" style="background:${cc}"></span>${t.key}</div><span class="chip ${cls}">${mom!=null?signPct(mom)+' '+cmpLbl:'—'}</span></div>
       <div class="mom-spark"><canvas id="${cid}" role="img" aria-label="${t.key} monthly sold vs forecast trend"></canvas></div>
       ${hasFcst?`<div class="spark-leg"><span><i style="border-color:${cc}"></i>Sold</span><span><i class="dash" style="border-color:${hexA(cc,.6)}"></i>Forecast</span></div>`:''}
       <div class="prod-nums"><div class="col"><div class="k">Sold · YTD</div><div class="vv">${fmtN(ytdS)}</div></div><div class="col mid"><div class="k">Revenue · YTD</div><div class="vv" style="color:var(--accent)">${ytdHasD?fmtMoneyK(ytdD):'—'}</div></div><div class="col"><div class="k">Cases · YTD</div><div class="vv">${ytdHasC?fmtN(ytdC):'—'}</div></div></div>
@@ -978,7 +1004,7 @@ function buildOverview(yr){
     const agg={};
     TYPES.forEach(t=>{const mp=SKU_DATA[yr][t.key];if(mp)Object.keys(mp).forEach(b=>{
       const o=agg[b]||(agg[b]={rev:0,prev:0,u:0});
-      mp[b].forEach(s=>{const u=s.s[li]||0,pu=pi>=0?(s.s[pi]||0):0;o.rev+=u*s.p;o.prev+=pu*s.p;o.u+=u;});
+      mp[b].forEach(s=>{const u=s.s[li]||0,pu=pi>=0?(s.s[pi]||0):0;o.rev+=u*uRate(s);o.prev+=pu*uRate(s);o.u+=u;});
     });});
     const bs=Object.keys(agg).sort((a,b)=>agg[b].rev-agg[a].rev);
     if(bs.length){
@@ -992,7 +1018,7 @@ function buildOverview(yr){
     }
   }
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3.5-4 3 2.5L21 7"/></svg>`;
-  return {html:`<div class="page-head"><div class="page-title">${icon}Executive Summary</div>${ctrlBox(yr,true)}</div>${kpi}${brandStrip}${prod}`, specs};
+  return {html:`<div class="page-head"><div class="page-title">${icon}Executive Summary</div>${ctrlBox(yr,true)}</div>${kpi}${basisNote()}${brandStrip}${prod}`, specs};
 }
 
 /* ---------- SKU Ranking — per brand, SKUs ranked by units sold and revenue ---------- */
@@ -1010,7 +1036,7 @@ function buildSkuRank(yr){
   const span=ytd?(upto.length>1?`${mf(upto[0])}–${mf(lm)}`:mf(lm)):mf(lm);
   const all=[];
   TYPES.forEach(t=>{const mp=SKU_DATA[yr][t.key];if(mp)Object.keys(mp).forEach(b=>{
-    mp[b].forEach(s=>{let u=0;idxs.forEach(i=>u+=s.s[i]||0);if(u>0)all.push({k:s.k,d:s.d,cat:t.key,brand:b,rev:u*s.p,u});});
+    mp[b].forEach(s=>{let u=0;idxs.forEach(i=>u+=s.s[i]||0);if(u>0)all.push({k:s.k,d:s.d,cat:t.key,brand:b,rev:u*uRate(s),u});});
   });});
   if(!all.length)return note(`No SKU sales recorded ${ytd?`YTD (${span})`:`in ${mf(lm)}`} ${yr}.`);
   const metric=(skuRankMetric==='un')?'un':'rev';
@@ -1054,7 +1080,7 @@ function buildSkuRank(yr){
     const hidden=!(none||fset.has(key));
     return `<div class="month-card rk-card${hidden?' rk-hidden':''}" data-key="${key}" style="margin-bottom:16px"><div class="mc-head"><div class="mc-name rk-head-name">${label}</div><div class="badges"><span class="tb tb-vol">${g.skus.length} SKU${g.skus.length>1?'s':''}</span><span class="tb tb-up">${fmtMoneyK(g.rev)}</span><span class="tb">${fmtN(g.u)} units</span></div></div>${bodyFor(g,'rev')}${bodyFor(g,'un')}</div>`;
   }).join('');
-  return wrap(`${toolbar}<div class="skurank" data-metric="${metric}">${cards}</div>`);
+  return wrap(`${toolbar}${basisNote()}<div class="skurank" data-metric="${metric}">${cards}</div>`);
 }
 
 /* ---------- Operations (S&OP supply side) — own mode; each section is its own sidebar page ---------- */
@@ -1413,6 +1439,154 @@ function buildForecast(yr,key){
   return {html:`${head}${msg}${chartCard}${catCard}${brandCard}${itCard}${note}`, specs};
 }
 
+/* ---------- Planning · Forecast · Recreational Forecast (National, 2026) ----------
+   National recreational sell-in forecast pulled from "2026 Recreational Forecast -
+   National.xlsx" (sheet "National 2026 v.jb", first/topmost table). Units only, by
+   SKU × province × month. Three views: Total · by SKU · by Customer/Province.
+   REC_FCST is a baked-in snapshot; the sheet's embedded "Total" summary row is dropped
+   so nothing double-counts. Provinces: ON AB MB SK NL BC QC (NL/BC/QC not yet forecast). */
+const REC_FCST={"prov":["ON","AB","MB","SK","NL","BC","QC"],"months":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"src":"2026 Recreational Forecast - National.xlsx \u00b7 National 2026 v.jb","recs":[{"s":"CN010","c":"Extracts","b":"Shatterizer","n":"SHATTERIZER 8 Ball Kush Shatter 1x1g","a":"Active","m":[[1800,0,33,19,0,0,0],[1860,0,33,19,0,0,0],[1920,0,33,19,0,0,0],[1966,0,33,19,0,0,0],[2022,0,33,19,0,0,0],[2100,0,67,19,0,0,0],[2159,0,108,19,0,0,0],[2239,0,150,38,0,0,0],[2319,0,183,57,0,0,0],[2401,0,225,88,0,0,0],[2484,0,275,107,0,0,0],[2592,0,324,126,0,0,0]]},{"s":"CN051","c":"Extracts","b":"GREAZY","n":"GREAZY Afghan Black Hash 1x2g","a":"Active","m":[[2400,600,0,0,0,0,0],[2400,600,0,0,0,0,0],[2400,720,0,0,0,0,0],[1421,720,0,0,0,0,0],[1462,840,0,0,0,0,0],[1518,0,0,0,0,0,0],[1561,0,0,0,0,0,0],[1619,0,0,0,0,0,0],[1677,0,0,0,0,0,0],[1736,0,0,0,0,0,0],[1796,0,0,0,0,0,0],[1874,0,0,0,0,0,0]]},{"s":"CN048","c":"Extracts","b":"Shatterizer","n":"SHATTERIZER Pink Gas Shatter 1x1g","a":"Active","m":[[1080,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1140,0,0,0,0,0,0],[764,0,0,0,0,0,0],[779,0,0,0,0,0,0],[809,0,0,0,0,0,0],[831,0,0,0,0,0,0],[862,0,0,0,0,0,0],[893,0,0,0,0,0,0],[925,0,0,0,0,0,0],[957,0,0,0,0,0,0],[989,0,0,0,0,0,0]]},{"s":"EX002","c":"Extracts","b":"Ellevia","n":"ELLEVIA 1:700 RSO 1x1g","a":"Active","m":[[2378,0,33,0,0,0,0],[2378,0,33,0,0,0,0],[2378,0,33,0,0,0,0],[2381,0,33,0,0,0,0],[2449,0,33,0,0,0,0],[2518,0,67,0,0,0,0],[2589,0,108,0,0,0,0],[2659,0,150,0,0,0,0],[2755,0,183,0,0,0,0],[2825,0,225,0,0,0,0],[2924,0,275,0,0,0,0],[2994,0,324,0,0,0,0]]},{"s":"FL006","c":"Flower","b":"Hunny Pot","n":"HUNNY POT Limited Drip 3.5g Whole Flower","a":"Active","m":[[864,0,0,0,0,0,0],[864,0,0,0,0,0,0],[864,0,0,0,0,0,0],[819,0,0,0,0,0,0],[834,0,0,0,0,0,0],[866,0,0,0,0,0,0],[891,0,0,0,0,0,0],[924,0,0,0,0,0,0],[957,0,0,0,0,0,0],[991,0,0,0,0,0,0],[1025,0,0,0,0,0,0],[1060,0,0,0,0,0,0]]},{"s":"FL019","c":"Flower","b":"GREAZY","n":"GREAZY HeadStash Whole Flower 3.5g","a":"Active","m":[[216,0,0,0,0,0,0],[288,0,0,0,0,0,0],[288,0,0,0,0,0,0],[71,0,0,0,0,0,0],[72,0,0,0,0,0,0],[75,0,0,0,0,0,0],[77,0,0,0,0,0,0],[80,0,0,0,0,0,0],[83,0,0,0,0,0,0],[86,0,0,0,0,0,0],[89,0,0,0,0,0,0],[92,0,0,0,0,0,0]]},{"s":"PR085","c":"Pre-Rolls","b":"Buddy Blooms","n":"Purple Haze & Strawberry OG Best Buds Mix'd Pack","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[3998,0,0,0,0,0,0],[4347,0,0,0,0,0,0],[4708,0,0,0,0,0,0],[5082,0,0,0,0,0,0],[5208,0,0,0,0,0,0],[5334,0,0,0,0,0,0]]},{"s":"PR006","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS 10th Planet PR 10x0.5g","a":"Active","m":[[7800,0,33,19,0,0,0],[8400,0,33,19,0,0,0],[8700,0,33,19,0,0,0],[5283,0,33,19,0,0,0],[5544,0,33,19,0,0,0],[5810,0,67,19,0,0,0],[6028,0,108,19,0,0,0],[6305,0,150,38,0,0,0],[6529,0,183,57,0,0,0],[6695,0,225,88,0,0,0],[6861,0,275,107,0,0,0],[6963,0,324,126,0,0,0]]},{"s":"PR008","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Sativa PR 1x1g","a":"Active","m":[[7200,0,0,0,0,0,0],[7800,0,0,0,0,0,0],[7800,0,0,0,0,0,0],[4023,0,0,0,0,0,0],[4139,0,0,0,0,0,0],[4298,0,0,0,0,0,0],[4419,0,0,0,0,0,0],[4582,0,0,0,0,0,0],[4747,0,0,0,0,0,0],[4915,0,0,0,0,0,0],[5085,0,0,0,0,0,0],[5306,0,0,0,0,0,0]]},{"s":"PR011","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Indica PR 1x1g","a":"Active","m":[[4800,0,0,0,0,0,0],[5400,0,0,0,0,0,0],[5400,0,0,0,0,0,0],[3308,0,0,0,0,0,0],[3404,0,0,0,0,0,0],[3534,0,0,0,0,0,0],[3634,0,0,0,0,0,0],[3768,0,0,0,0,0,0],[3904,0,0,0,0,0,0],[4041,0,0,0,0,0,0],[4181,0,0,0,0,0,0],[4363,0,0,0,0,0,0]]},{"s":"PR015","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Lil Buddy Sativa PR 1x0.5g","a":"Active","m":[[6000,0,0,0,0,0,0],[6000,0,0,0,0,0,0],[6600,0,0,0,0,0,0],[5999,0,0,0,0,0,0],[6172,0,0,0,0,0,0],[6409,0,0,0,0,0,0],[6590,0,0,0,0,0,0],[6833,0,0,0,0,0,0],[7079,0,0,0,0,0,0],[7329,0,0,0,0,0,0],[7582,0,0,0,0,0,0],[7912,0,0,0,0,0,0]]},{"s":"PR016","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Lil Buddy Indica PR 1x0.5g","a":"Active","m":[[4800,0,0,0,0,0,0],[4800,0,0,0,0,0,0],[5400,0,0,0,0,0,0],[5138,0,0,0,0,0,0],[5286,0,0,0,0,0,0],[5489,0,0,0,0,0,0],[5644,0,0,0,0,0,0],[5852,0,0,0,0,0,0],[6063,0,0,0,0,0,0],[6277,0,0,0,0,0,0],[6494,0,0,0,0,0,0],[6776,0,0,0,0,0,0]]},{"s":"PR018","c":"Pre-Rolls","b":"Hunny Pot","n":"HUNNY POT Limited Drip PR 10x0.35g","a":"Active","m":[[1920,0,0,0,0,0,0],[2040,0,0,0,0,0,0],[2160,0,0,0,0,0,0],[1702,0,0,0,0,0,0],[1733,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[1851,0,0,0,0,0,0],[1919,0,0,0,0,0,0],[1989,0,0,0,0,0,0],[2059,0,0,0,0,0,0],[2130,0,0,0,0,0,0],[2203,0,0,0,0,0,0]]},{"s":"PR029","c":"Pre-Rolls","b":"CCHR","n":"CHR Grape Diamonds PR 1x1g","a":"Active","m":[[9000,0,0,0,0,0,0],[9000,0,0,0,0,0,0],[9600,0,0,0,0,0,0],[6851,0,0,0,0,0,0],[7048,0,0,0,0,0,0],[7318,0,0,0,0,0,0],[7525,0,0,0,0,0,0],[7802,0,0,0,0,0,0],[8084,0,0,0,0,0,0],[8369,0,0,0,0,0,0],[8658,0,0,0,0,0,0],[9035,0,0,0,0,0,0]]},{"s":"PR032","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Mac10 Diamonds+Kief IPR 1x1g","a":"Active","m":[[3600,0,33,19,0,0,0],[3600,0,33,19,0,0,0],[4200,0,33,19,0,0,0],[2730,0,33,19,0,0,0],[2781,0,33,19,0,0,0],[2888,0,67,19,0,0,0],[2969,0,108,19,0,0,0],[3079,0,150,38,0,0,0],[3190,0,183,57,0,0,0],[3303,0,225,88,0,0,0],[3418,0,275,107,0,0,0],[3534,0,324,126,0,0,0]]},{"s":"PR052","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Big Buddy Indica PR 5x1g","a":"Active","m":[[3000,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[4200,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0]]},{"s":"PR057","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Lil Buddy Sativa PR 5x0.5g","a":"Active","m":[[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[2100,0,0,0,0,0,0],[2100,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[2100,0,0,0,0,0,0],[2100,0,0,0,0,0,0],[2100,0,0,0,0,0,0]]},{"s":"PR058","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Lil Buddy Indica PR 5x0.5g","a":"Active","m":[[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[2700,0,0,0,0,0,0],[2700,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[3000,0,0,0,0,0,0]]},{"s":"PR068","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Chemdawg 60+ Diamond IPR 3x0.5g","a":"Active","m":[[2700,0,33,0,0,0,0],[2700,0,33,0,0,0,0],[3300,0,33,0,0,0,0],[549,0,33,0,0,0,0],[570,720,33,0,0,0,0],[586,0,67,0,0,0,0],[586,0,108,0,0,0,0],[608,0,150,0,0,0,0],[630,0,183,0,0,0,0],[652,0,225,0,0,0,0],[674,0,275,0,0,0,0],[704,0,324,0,0,0,0]]},{"s":"PR045","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Bling Blunt Diamonds IPR 1x1.5g","a":"Active","m":[[1500,0,0,0,0,0,0],[1680,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[721,0,0,0,0,0,0],[734,0,0,0,0,0,0],[762,0,0,0,0,0,0],[784,0,0,0,0,0,0],[813,0,0,0,0,0,0],[842,0,0,0,0,0,0],[872,0,0,0,0,0,0],[902,0,0,0,0,0,0],[933,0,0,0,0,0,0]]},{"s":"PR046","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Orange Kush Cake Live Resin+Kief IPR 1x1g","a":"Active","m":[[2400,0,33,19,0,0,0],[2400,0,33,19,0,0,0],[2700,0,33,19,0,0,0],[1911,0,33,19,0,0,0],[1946,0,33,19,0,0,0],[2021,0,67,19,0,0,0],[2079,0,108,19,0,0,0],[2155,0,150,38,0,0,0],[2233,0,183,57,0,0,0],[2312,0,225,88,0,0,0],[2392,0,275,107,0,0,0],[2474,0,324,126,0,0,0]]},{"s":"PR070","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Highbrid PR 10x0.5g","a":"Active","m":[[3000,0,33,0,0,0,0],[3000,0,33,0,0,0,0],[3000,0,33,0,0,0,0],[2019,0,33,0,0,0,0],[2119,0,33,0,0,0,0],[2220,0,67,0,0,0,0],[2304,0,108,0,0,0,0],[2410,0,150,0,0,0,0],[2495,0,183,0,0,0,0],[2559,0,225,0,0,0,0],[2622,0,275,0,0,0,0],[2661,0,324,0,0,0,0]]},{"s":"PR050","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Bling Rocketz Live Resin+Diamonds IPR 5x0.5g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR075","c":"Pre-Rolls","b":"Hunny Pot","n":"HUNNY POT Birthday CK PR 1x1.5g","a":"Active","m":[[432,0,0,0,0,0,0],[432,0,0,0,0,0,0],[432,0,0,0,0,0,0],[503,0,0,0,0,0,0],[512,0,0,0,0,0,0],[532,0,0,0,0,0,0],[547,0,0,0,0,0,0],[567,0,0,0,0,0,0],[588,0,0,0,0,0,0],[608,0,0,0,0,0,0],[629,0,0,0,0,0,0],[651,0,0,0,0,0,0]]},{"s":"PR076","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOMS Biggest Buddy Sativa PR 1x2g","a":"Delist","m":[[600,0,33,19,0,0,0],[600,0,33,19,0,0,0],[600,0,33,19,0,0,0],[58,0,33,19,0,0,0],[60,0,33,19,0,0,0],[62,0,67,19,0,0,0],[64,0,108,19,0,0,0],[66,0,150,38,0,0,0],[68,0,183,57,0,0,0],[71,0,225,88,0,0,0],[73,0,275,107,0,0,0],[76,0,324,126,0,0,0]]},{"s":"PR077","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Biggest Buddy Indica PR 1x2g","a":"Delist","m":[[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[101,0,0,0,0,0,0],[103,0,0,0,0,0,0],[107,0,0,0,0,0,0],[110,0,0,0,0,0,0],[114,0,0,0,0,0,0],[118,0,0,0,0,0,0],[122,0,0,0,0,0,0],[126,0,0,0,0,0,0],[130,0,0,0,0,0,0]]},{"s":"PR061","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Blue Zlushies IPR 5x0.5g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[410,0,0,0,0,0,0],[421,0,0,0,0,0,0],[346,0,0,0,0,0,0],[88,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR062","c":"Infused Pre-Rolls","b":"GREAZY","n":"GREAZY Hash Oil IPR 3x0.5g","a":"Active","m":[[1500,0,0,0,0,0,0],[1620,0,0,0,0,0,0],[1680,0,0,0,0,0,0],[904,0,0,0,0,0,0],[920,0,0,0,0,0,0],[956,0,0,0,0,0,0],[983,0,0,0,0,0,0],[1019,0,0,0,0,0,0],[1056,0,0,0,0,0,0],[1093,0,0,0,0,0,0],[1131,0,0,0,0,0,0],[1170,0,0,0,0,0,0]]},{"s":"PR084","c":"Infused Pre-Rolls","b":"Shatterizer","n":"Northern Lights 60%+ Diamonds, Shatter IPR 3x0.5g","a":"Active","m":[[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[600,0,33,19,0,0,0],[720,0,33,19,0,0,0],[1200,0,67,19,0,0,0],[1380,0,108,19,0,0,0],[1500,0,150,38,0,0,0],[1620,0,183,57,0,0,0],[1740,0,225,88,0,0,0],[1800,0,275,107,0,0,0],[1800,0,324,126,0,0,0]]},{"s":"PR080","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Berry Burst! 60+ Diamond IPR 3x0.5g","a":"Inactive","m":[[720,0,0,0,0,0,0],[960,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR069","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Ting-a-ling Zing! 60+ Diamond IPR 3x0.5g","a":"Active","m":[[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[3000,0,0,0,0,0,0],[457,0,0,0,0,0,0],[465,0,0,0,0,0,0],[483,0,0,0,0,0,0],[497,0,0,0,0,0,0],[515,0,0,0,0,0,0],[534,0,0,0,0,0,0],[553,0,0,0,0,0,0],[572,0,0,0,0,0,0],[592,0,0,0,0,0,0]]},{"s":"VA048","c":"Vapes","b":"LITTI","n":"LITTI Hella Bubba Distillate Vape 1g","a":"Active","m":[[2100,0,33,19,0,0,0],[2100,0,33,19,0,0,0],[2400,0,33,19,0,0,0],[1966,0,33,19,0,0,0],[2022,0,33,19,0,0,0],[2100,0,67,19,0,0,0],[2159,0,108,19,0,0,0],[2239,0,150,38,0,0,0],[2319,0,183,57,0,0,0],[2401,0,225,88,0,0,0],[2484,0,275,107,0,0,0],[2592,0,324,126,0,0,0]]},{"s":"VA050","c":"Vapes","b":"LITTI","n":"LITTI Pushn' Peach Distillate Vape 1g","a":"Active","m":[[3000,1440,0,0,0,0,0],[3000,1440,0,0,0,0,0],[3300,1560,0,0,0,0,0],[2730,1560,0,0,0,0,0],[2809,1680,0,0,0,0,0],[2916,0,0,0,0,0,0],[2999,0,0,0,0,0,0],[3109,0,0,0,0,0,0],[3221,0,0,0,0,0,0],[3335,0,0,0,0,0,0],[3450,0,0,0,0,0,0],[3600,0,0,0,0,0,0]]},{"s":"VA051","c":"Vapes","b":"LITTI","n":"LITTI Bussin' Blackberry Distillate Vape 1g","a":"Active","m":[[3300,1020,0,0,0,0,0],[3300,1020,0,0,0,0,0],[3600,1200,0,0,0,0,0],[2621,1200,0,0,0,0,0],[2696,1380,0,0,0,0,0],[2800,0,0,0,0,0,0],[2879,0,0,0,0,0,0],[2985,0,0,0,0,0,0],[3093,0,0,0,0,0,0],[3202,0,0,0,0,0,0],[3312,0,0,0,0,0,0],[3456,0,0,0,0,0,0]]},{"s":"VA061","c":"Vapes","b":"Greazy","n":"GREAZY Peach Panther Liquid Diamond Disposable Vape 1g","a":"Active","m":[[2700,240,0,0,0,0,0],[2700,240,0,0,0,0,0],[2700,300,0,0,0,0,0],[1201,300,0,0,0,0,0],[1236,360,0,0,0,0,0],[1283,0,0,0,0,0,0],[1319,0,0,0,0,0,0],[1368,0,0,0,0,0,0],[1417,0,0,0,0,0,0],[1467,0,0,0,0,0,0],[1518,0,0,0,0,0,0],[1584,0,0,0,0,0,0]]},{"s":"VA067","c":"Vapes","b":"LITTI","n":"LITTI Chillberry CBD+CBG AIO Vape 1g","a":"Active","m":[[1080,0,33,0,0,0,0],[1080,0,33,0,0,0,0],[1080,0,33,0,0,0,0],[807,0,33,0,0,0,0],[822,0,33,0,0,0,0],[854,0,67,0,0,0,0],[878,0,108,0,0,0,0],[911,0,150,0,0,0,0],[944,0,183,0,0,0,0],[977,0,225,0,0,0,0],[1011,0,275,0,0,0,0],[1045,0,324,0,0,0,0]]},{"s":"VA073","c":"Vapes","b":"Hunny Pot","n":"HUNNY POT Liquid Diamonds AIO Vape 1g","a":"Active","m":[[960,0,0,0,0,0,0],[960,0,0,0,0,0,0],[960,0,0,0,0,0,0],[541,0,0,0,0,0,0],[551,0,0,0,0,0,0],[572,0,0,0,0,0,0],[588,0,0,0,0,0,0],[610,0,0,0,0,0,0],[632,0,0,0,0,0,0],[654,0,0,0,0,0,0],[677,0,0,0,0,0,0],[700,0,0,0,0,0,0]]},{"s":"VA075","c":"Vapes","b":"Greazy","n":"GREAZY Black Cherry Funk Live Resin AIO Vape 1g","a":"Active","m":[[432,0,0,0,0,0,0],[432,0,0,0,0,0,0],[432,0,0,0,0,0,0],[273,0,0,0,0,0,0],[281,0,0,0,0,0,0],[231,0,0,0,0,0,0],[59,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA076","c":"Vapes","b":"LITTI","n":"LITTI Guava Mama 510 Vape","a":"Active","m":[[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[437,0,0,0,0,0,0],[445,0,0,0,0,0,0],[462,0,0,0,0,0,0],[475,0,0,0,0,0,0],[493,0,0,0,0,0,0],[510,0,0,0,0,0,0],[529,0,0,0,0,0,0],[547,0,0,0,0,0,0],[565,0,0,0,0,0,0]]},{"s":"PR012","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Strawberry OG PR 10x0.5g","a":"Active","m":[[9600,0,33,0,0,0,0],[9600,0,33,0,0,0,0],[10200,0,33,0,0,0,0],[8338,0,33,0,0,0,0],[8747,0,33,0,0,0,0],[9165,0,67,0,0,0,0],[9508,0,108,0,0,0,0],[9944,0,150,0,0,0,0],[10296,0,183,0,0,0,0],[10558,0,225,0,0,0,0],[10819,0,275,0,0,0,0],[10981,0,324,0,0,0,0]]},{"s":"PR013","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Ethos Glue PR 10x0.5g","a":"Active","m":[[3000,0,33,0,0,0,0],[3000,0,33,0,0,0,0],[3300,0,33,0,0,0,0],[2990,0,33,0,0,0,0],[3137,0,33,0,0,0,0],[3287,0,67,0,0,0,0],[3411,0,108,0,0,0,0],[3568,0,150,0,0,0,0],[3694,0,183,0,0,0,0],[3788,0,225,0,0,0,0],[3882,0,275,0,0,0,0],[3940,0,324,0,0,0,0]]},{"s":"PR017","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Big Buddy Indica PR 2x1g","a":"Active","m":[[18000,0,33,19,0,0,0],[18000,0,33,19,0,0,0],[19200,0,33,19,0,0,0],[8733,0,33,19,0,0,0],[8806,0,33,19,0,0,0],[9145,0,67,19,0,0,0],[9405,0,108,19,0,0,0],[9754,0,150,38,0,0,0],[10107,0,183,57,0,0,0],[10466,0,225,88,0,0,0],[10830,0,275,107,0,0,0],[11198,0,324,126,0,0,0]]},{"s":"PR025","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Big Buddy Sativa PR 2x1g","a":"Active","m":[[16800,0,33,19,0,0,0],[18000,0,33,19,0,0,0],[19200,0,33,19,0,0,0],[10275,0,33,19,0,0,0],[10466,0,33,19,0,0,0],[10868,0,67,19,0,0,0],[11177,0,108,19,0,0,0],[11590,0,150,38,0,0,0],[12008,0,183,57,0,0,0],[12433,0,225,88,0,0,0],[12864,0,275,107,0,0,0],[13301,0,324,126,0,0,0]]},{"s":"PR079","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Berry Blaze Double Diamond IPR 5x0.4g","a":"Inactive","m":[[900,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR053","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Big Buddy Sativa PR 5x1g","a":"Active","m":[[2400,2100,0,0,0,0,0],[2400,2100,0,0,0,0,0],[2700,2280,0,0,0,0,0],[2700,2280,0,0,0,0,0],[3000,2400,0,0,0,0,0],[3000,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[4200,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3000,0,0,0,0,0,0]]},{"s":"PR071","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Purple Haze PR 10x0.5g","a":"Active","m":[[9000,1200,0,0,0,0,0],[9000,1380,0,0,0,0,0],[9000,1500,0,0,0,0,0],[8686,1620,0,0,0,0,0],[9112,720,0,0,0,0,0],[9548,0,0,0,0,0,0],[9905,0,0,0,0,0,0],[10359,0,0,0,0,0,0],[10725,0,0,0,0,0,0],[10998,0,0,0,0,0,0],[11271,0,0,0,0,0,0],[11439,0,0,0,0,0,0]]},{"s":"PR081","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Peach Tingz Double Diamond IPR 5x0.4g","a":"Active","m":[[720,0,0,0,0,0,0],[960,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[98,0,0,0,0,0,0],[99,0,0,0,0,0,0],[103,0,0,0,0,0,0],[106,0,0,0,0,0,0],[110,0,0,0,0,0,0],[114,0,0,0,0,0,0],[118,0,0,0,0,0,0],[122,0,0,0,0,0,0],[126,0,0,0,0,0,0]]},{"s":"VA039","c":"Vapes","b":"LITTI","n":"LITTI Gulupa Gulp Distillate Vape 1g","a":"Active","m":[[2400,1800,33,0,0,0,0],[2400,1800,33,0,0,0,0],[3000,1980,33,0,0,0,0],[1741,1980,33,0,0,0,0],[1809,2160,33,0,0,0,0],[1878,0,67,0,0,0,0],[1949,0,108,0,0,0,0],[2021,0,150,0,0,0,0],[2093,0,183,0,0,0,0],[2167,0,225,0,0,0,0],[2241,0,275,0,0,0,0],[2338,0,324,0,0,0,0]]},{"s":"VA040","c":"Vapes","b":"LITTI","n":"LITTI Slappn' Berry Distillate Vape 1g","a":"Active","m":[[3000,1500,33,0,0,0,0],[3300,1500,33,0,0,0,0],[3600,1620,33,0,0,0,0],[2316,1620,33,0,0,0,0],[2407,1800,33,0,0,0,0],[2498,0,67,0,0,0,0],[2568,0,108,0,0,0,0],[2637,0,150,0,0,0,0],[2732,0,183,0,0,0,0],[2855,0,225,0,0,0,0],[2980,0,275,0,0,0,0],[3080,0,324,0,0,0,0]]},{"s":"VA054","c":"Vapes","b":"LITTI","n":"LITTI Sunrise Smash Distillate Vape 1g","a":"Active","m":[[2700,2700,33,0,0,0,0],[2700,2700,33,0,0,0,0],[3000,2880,33,0,0,0,0],[2062,2880,33,0,0,0,0],[2143,3000,33,0,0,0,0],[2225,0,67,0,0,0,0],[2310,0,108,0,0,0,0],[2394,0,150,0,0,0,0],[2480,0,183,0,0,0,0],[2567,0,225,0,0,0,0],[2656,0,275,0,0,0,0],[2770,0,324,0,0,0,0]]},{"s":"VA065","c":"Vapes","b":"Greazy","n":"GREAZY Grape God Liquid Diamond Vape 1g","a":"Active","m":[[1200,180,0,0,0,0,0],[1200,240,0,0,0,0,0],[1500,240,0,0,0,0,0],[426,300,0,0,0,0,0],[438,24,0,0,0,0,0],[455,0,0,0,0,0,0],[468,0,0,0,0,0,0],[485,0,0,0,0,0,0],[520,0,0,0,0,0,0],[520,0,0,0,0,0,0],[538,0,0,0,0,0,0],[562,0,0,0,0,0,0]]},{"s":"VA069","c":"Vapes","b":"Greazy","n":"GREAZY Super Lemon Haze Live Resin 510 Vape 1g","a":"Active","m":[[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[379,0,0,0,0,0,0],[390,0,0,0,0,0,0],[405,0,0,0,0,0,0],[416,0,0,0,0,0,0],[432,0,0,0,0,0,0],[447,0,0,0,0,0,0],[463,0,0,0,0,0,0],[479,0,0,0,0,0,0],[500,0,0,0,0,0,0]]},{"s":"CN042","c":"Extracts","b":"GREAZY","n":"GREAZY Hash Oil 1x1g","a":"Inactive","m":[[1200,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1201,0,0,0,0,0,0],[1223,0,0,0,0,0,0],[1270,0,0,0,0,0,0],[1307,0,0,0,0,0,0],[1355,0,0,0,0,0,0],[1404,0,0,0,0,0,0],[1453,0,0,0,0,0,0],[1504,0,0,0,0,0,0],[1555,0,0,0,0,0,0]]},{"s":"PR083","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Purp'd Out Double Diamond IPR 5x0.4g","a":"Inactive","m":[[1800,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR082","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Punch'd Up Double Diamond IPR 5x0.4g","a":"Active","m":[[1200,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[54,0,0,0,0,0,0],[55,0,0,0,0,0,0],[57,0,0,0,0,0,0],[59,0,0,0,0,0,0],[61,0,0,0,0,0,0],[63,0,0,0,0,0,0],[65,0,0,0,0,0,0],[67,0,0,0,0,0,0],[70,0,0,0,0,0,0]]},{"s":"PR073","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI The Juici Pack Double Diamond IPR 5x0.4g","a":"Active","m":[[2880,1200,0,0,0,0,0],[2880,1200,0,0,0,0,0],[2880,1320,0,0,0,0,0],[1145,1320,0,0,0,0,0],[1178,1380,0,0,0,0,0],[1223,0,0,0,0,0,0],[1257,0,0,0,0,0,0],[1304,0,0,0,0,0,0],[1351,0,0,0,0,0,0],[1398,0,0,0,0,0,0],[1447,0,0,0,0,0,0],[1510,0,0,0,0,0,0]]},{"s":"PR031","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Savage Oh J Distillate IPR 3x0.5g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA068","c":"Vapes","b":"Greazy","n":"GREAZY Lemonatti Liquid Diamond AIO Vape 1g","a":"Active","m":[[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[105,0,0,0,0,0,0],[107,0,0,0,0,0,0],[111,0,0,0,0,0,0],[115,0,0,0,0,0,0],[119,0,0,0,0,0,0],[123,0,0,0,0,0,0],[127,0,0,0,0,0,0],[132,0,0,0,0,0,0],[136,0,0,0,0,0,0]]},{"s":"VA072","c":"Vapes","b":"Greazy","n":"GREAZY Sin Mintz Liquid Diamond AIO Vape 1g","a":"Delist","m":[[240,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[819,0,0,0,0,0,0],[843,0,0,0,0,0,0],[693,0,0,0,0,0,0],[176,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA074","c":"Vapes","b":"LITTI","n":"LITTI Plum Papi AIO Vape 1g","a":"Delist","m":[[240,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[546,0,0,0,0,0,0],[562,0,0,0,0,0,0],[462,0,0,0,0,0,0],[118,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"CN012","c":"Extracts","b":"Shatterizer","n":"SHATTERIZER Slurricane Shatter 1x1g","a":"Swap","m":[[600,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[474,0,0,0,0,0,0],[483,0,0,0,0,0,0],[501,0,0,0,0,0,0],[516,0,0,0,0,0,0],[535,0,0,0,0,0,0],[554,0,0,0,0,0,0],[574,0,0,0,0,0,0],[594,0,0,0,0,0,0],[614,0,0,0,0,0,0]]},{"s":"CN044","c":"Extracts","b":"Shatterizer","n":"SHATTERIZER Rockstar Diamonds+Shatter Sauce","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"CN045","c":"Extracts","b":"GREAZY","n":"GREAZY Black Cherry Greazy Live Resin 1x1g ","a":"Gone?","m":[[450,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[19,0,0,0,0,0,0],[19,0,0,0,0,0,0],[16,0,0,0,0,0,0],[4,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"CN046","c":"Extracts","b":"GREAZY","n":"GREAZY Orange Kush Cake Greazy Live Resin 1x1g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"CN049","c":"Extracts","b":"Shatterizer","n":"SHATTERIZER Electric Grapefruit Shatter 1x1g","a":"Active","m":[[750,0,0,0,0,0,0],[750,0,0,0,0,0,0],[750,0,0,0,0,0,0],[602,0,0,0,0,0,0],[613,0,0,0,0,0,0],[637,0,0,0,0,0,0],[655,0,0,0,0,0,0],[679,0,0,0,0,0,0],[703,0,0,0,0,0,0],[728,0,0,0,0,0,0],[753,0,0,0,0,0,0],[779,0,0,0,0,0,0]]},{"s":"FL016","c":"Flower","b":"GREAZY","n":"GREAZY King Kush Whole Flower 14g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR043","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI PB&J WTF?! Distillate IPR 1x1g","a":"Active","m":[[1200,0,0,0,0,0,0],[1320,0,0,0,0,0,0],[1440,0,0,0,0,0,0],[730,0,0,0,0,0,0],[743,0,0,0,0,0,0],[772,0,0,0,0,0,0],[793,0,0,0,0,0,0],[823,0,0,0,0,0,0],[853,0,0,0,0,0,0],[883,0,0,0,0,0,0],[913,0,0,0,0,0,0],[944,0,0,0,0,0,0]]},{"s":"PR036","c":"Pre-Rolls","b":"Buddy Blooms","n":"BUDDY BLOOMS Bunch of Lil Buddies PR 15x0.5g","a":"Inactive","m":[[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[83,0,0,0,0,0,0],[85,0,0,0,0,0,0],[70,0,0,0,0,0,0],[18,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR047","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Pushn' Peach Distillate IPR 5x0.5g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR048","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Pushn' Peach Distillate IPR 1x1g","a":"Inactive","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR056","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Bussin' Blackberry Distillate IPR 1x1g","a":"Inactive","m":[[360,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR059","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Bussin' Blackberry Distillate 5x0.5g","a":"AB ONLY","m":[[720,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[491,0,0,0,0,0,0],[506,0,0,0,0,0,0],[416,0,0,0,0,0,0],[106,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR060","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Sunrise Smash Distillate IPR 5x0.5g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR063","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Grape Escape Distillate IPR 3x0.5g","a":"Inactive","m":[[120,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR064","c":"Infused Pre-Rolls","b":"LITTI","n":"Dope AF Vanilla Diamond IPR 3x0.5g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[238,0,0,0,0,0,0],[245,0,0,0,0,0,0],[202,0,0,0,0,0,0],[51,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR065","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Banaenae Diamond IPR 1x1g","a":"Inactive","m":[[600,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR066","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Gulupa Gulp Distillate IPR 5x0.5g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[168,0,0,0,0,0,0],[173,0,0,0,0,0,0],[142,0,0,0,0,0,0],[36,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR072","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Sunrise Smash Distillate IPR 1x1g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[344,0,0,0,0,0,0],[357,0,0,0,0,0,0],[371,0,0,0,0,0,0],[385,0,0,0,0,0,0],[399,0,0,0,0,0,0],[413,0,0,0,0,0,0],[428,0,0,0,0,0,0],[442,0,0,0,0,0,0],[462,0,0,0,0,0,0]]},{"s":"PR041","c":"Infused Pre-Rolls","b":"LITTI","n":"LITTI Slappn' Berry Distillate IPR 3x0.5g","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR001","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER 8 Ball Kush Shatter+Kief IPR 1x1g","a":"Active","m":[[6000,0,67,38,0,0,0],[6000,0,67,38,0,0,0],[6600,0,67,38,0,0,0],[4949,0,67,38,0,0,0],[5191,0,67,38,0,0,0],[5440,0,134,38,0,0,0],[5643,0,217,38,0,0,0],[5901,0,300,76,0,0,0],[6055,0,367,114,0,0,0],[6266,0,450,176,0,0,0],[6363,0,549,214,0,0,0],[6458,0,648,252,0,0,0]]},{"s":"PR074","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Pink Gas Double Infused IPR 1x1g","a":"Active","m":[[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[2400,0,0,0,0,0,0],[1311,0,0,0,0,0,0],[1349,0,0,0,0,0,0],[1401,0,0,0,0,0,0],[1440,0,0,0,0,0,0],[1493,0,0,0,0,0,0],[1547,0,0,0,0,0,0],[1602,0,0,0,0,0,0],[1657,0,0,0,0,0,0],[1729,0,0,0,0,0,0]]},{"s":"PR078","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Electric Grapefruit Diamonds+Kief IPR 1x1g","a":"Inactive","m":[[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR033","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Rockstar Diamonds+Kief IPR 1x1g","a":"Active","m":[[3300,0,0,0,0,0,0],[3300,0,0,0,0,0,0],[3600,0,0,0,0,0,0],[1529,0,0,0,0,0,0],[1557,0,0,0,0,0,0],[1617,0,0,0,0,0,0],[1663,0,0,0,0,0,0],[1724,0,0,0,0,0,0],[1787,0,0,0,0,0,0],[1850,0,0,0,0,0,0],[1914,0,0,0,0,0,0],[1979,0,0,0,0,0,0]]},{"s":"PR040","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Slurricane Shatter+Kief IPR 1x1g","a":"Active","m":[[3000,0,33,0,0,0,0],[3000,0,33,0,0,0,0],[3300,0,33,0,0,0,0],[2278,0,33,0,0,0,0],[2344,0,33,0,0,0,0],[2434,0,67,0,0,0,0],[2502,0,108,0,0,0,0],[2595,0,150,0,0,0,0],[2688,0,183,0,0,0,0],[2783,0,225,0,0,0,0],[2879,0,275,0,0,0,0],[3005,0,324,0,0,0,0]]},{"s":"VA044","c":"Vapes","b":"LITTI","n":"LITTI Dope AF Vanilla Distillate Vape 1g","a":"Delist","m":[[840,0,0,0,0,0,0],[840,0,0,0,0,0,0],[0,0,0,0,0,0,0],[819,0,0,0,0,0,0],[843,0,0,0,0,0,0],[693,0,0,0,0,0,0],[176,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA059","c":"Vapes","b":"LITTI","n":"LITTI Grape Escape Distillate Vape 1g","a":"Delist","m":[[1200,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[0,0,0,0,0,0,0],[137,0,0,0,0,0,0],[140,0,0,0,0,0,0],[116,0,0,0,0,0,0],[29,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA060","c":"Vapes","b":"LITTI","n":"LITTI Mint Madness Distillate Disposable Vape 1g","a":"Delist","m":[[180,0,0,0,0,0,0],[180,0,0,0,0,0,0],[0,0,0,0,0,0,0],[273,0,0,0,0,0,0],[281,0,0,0,0,0,0],[231,0,0,0,0,0,0],[59,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA062","c":"Vapes","b":"LITTI","n":"LITTI Lovely LeeChi Distillate Vape 1g","a":"Active","m":[[1500,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1620,0,0,0,0,0,0],[1092,0,0,0,0,0,0],[1112,0,0,0,0,0,0],[1155,0,0,0,0,0,0],[1188,0,0,0,0,0,0],[1232,0,0,0,0,0,0],[1276,0,0,0,0,0,0],[1321,0,0,0,0,0,0],[1367,0,0,0,0,0,0],[1414,0,0,0,0,0,0]]},{"s":"VA064","c":"Vapes","b":"LITTI","n":"LITTI Mint Madness Distillate Vape 1g","a":"Inactive","m":[[240,0,0,0,0,0,0],[240,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA066","c":"Vapes","b":"LITTI","n":"LITTI Razmatazz Rush Distillate AIO Vape 1g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[437,0,0,0,0,0,0],[449,0,0,0,0,0,0],[370,0,0,0,0,0,0],[94,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA070","c":"Vapes","b":"LITTI","n":"LITTI Malibooya Disposable Vape 1g","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[410,0,0,0,0,0,0],[421,0,0,0,0,0,0],[347,0,0,0,0,0,0],[88,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA071","c":"Vapes","b":"LITTI","n":"LITTI Zappl'd Disposable Vape 1g MC-ON","a":"Delist","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[410,0,0,0,0,0,0],[421,0,0,0,0,0,0],[347,0,0,0,0,0,0],[88,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"VA077","c":"Vapes","b":"LITTI","n":"Berry Blaze Liquid Diamonds AIO","a":"Active","m":[[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[546,0,33,19,0,0,0],[1124,0,33,19,0,0,0],[1617,0,67,19,0,0,0],[1999,0,108,19,0,0,0],[2174,0,150,38,0,0,0],[2354,0,183,57,0,0,0],[2541,0,225,88,0,0,0],[2604,0,275,107,0,0,0],[2667,0,324,126,0,0,0]]},{"s":"VA078","c":"Vapes","b":"LITTI","n":"Cherry Chonk Liquid Diamonds AIO","a":"Active","m":[[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[0,0,33,19,0,0,0],[546,0,33,19,0,0,0],[1124,0,33,19,0,0,0],[1617,0,67,19,0,0,0],[1999,0,108,19,0,0,0],[2174,0,150,38,0,0,0],[2354,0,183,57,0,0,0],[2541,0,225,88,0,0,0],[2604,0,275,107,0,0,0],[2667,0,324,126,0,0,0]]},{"s":"PR067","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Grandaddy Purple Shatter IPR 5x0.5g","a":"Active","m":[[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[448,0,0,0,0,0,0],[456,0,0,0,0,0,0],[474,0,0,0,0,0,0],[487,0,0,0,0,0,0],[505,0,0,0,0,0,0],[524,0,0,0,0,0,0],[542,0,0,0,0,0,0],[561,0,0,0,0,0,0],[580,0,0,0,0,0,0]]},{"s":"PR086","c":"Infused Pre-Rolls","b":"Shatterizer","n":"Northern Lights 60%+ Diamonds & Shatter Infused Blunt","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[1117,0,0,0,0,0,0],[1208,0,0,0,0,0,0],[1239,0,0,0,0,0,0],[1270,0,0,0,0,0,0],[1302,0,0,0,0,0,0],[1334,0,0,0,0,0,0]]},{"s":"PR054","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Electric Grapefruit Shatter IPR 5x0.5g","a":"Delist","m":[[600,0,0,0,0,0,0],[600,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]]},{"s":"PR055","c":"Infused Pre-Rolls","b":"Shatterizer","n":"SHATTERIZER Pink Gas Shatter IPR 3x0.5g","a":"Active","m":[[720,0,33,0,0,0,0],[840,0,33,0,0,0,0],[900,0,33,0,0,0,0],[412,0,33,0,0,0,0],[424,0,33,0,0,0,0],[440,0,67,0,0,0,0],[453,0,108,0,0,0,0],[470,0,150,0,0,0,0],[487,0,183,0,0,0,0],[504,0,225,0,0,0,0],[521,0,275,0,0,0,0],[544,0,324,0,0,0,0]]},{"s":"PR087","c":"Infused Pre-Rolls","b":"Shatterizer","n":"Granddaddy Purple 60%+ Diamonds & Shatter IPR","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[600,0,0,0,0,0,0],[1320,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1620,0,0,0,0,0,0],[1740,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[1800,0,0,0,0,0,0]]},{"s":"CN053","c":"Extracts","b":"GREAZY","n":"Black Cherry Punch Live Rosin","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[600,0,0,0,0,0,0],[1320,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1620,0,0,0,0,0,0],[1740,0,0,0,0,0,0],[1800,0,0,0,0,0,0],[1800,0,0,0,0,0,0]]},{"s":"VA079","c":"Vapes","b":"LITTI","n":"Watermelon Whammy Liquid Diamonds 510","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[600,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1020,0,0,0,0,0,0],[1140,0,0,0,0,0,0],[1320,0,0,0,0,0,0],[1320,0,0,0,0,0,0]]},{"s":"VA080","c":"Vapes","b":"GREAZY","n":"Golden Pineapple Live Resin & Liquid Diamonds AIO","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1200,0,0,0,0,0,0],[1500,0,0,0,0,0,0],[1680,0,0,0,0,0,0],[1860,0,0,0,0,0,0]]},{"s":"PR088","c":"Infused Pre-Rolls","b":"Buddy Blooms","n":"Black Cherry Punch Bubble Hash Infused Pre-Roll","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[240,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1260,0,0,0,0,0,0]]},{"s":"PR089","c":"Infused Pre-Rolls","b":"GREAZY","n":"Cranberry Ginger Fizz 70+ Diamond Coated & Infused Pre-Roll","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[240,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1260,0,0,0,0,0,0]]},{"s":"VA081","c":"Vapes","b":"GREAZY","n":"Ginger Fizz Live Resin & Liquid Diamonds All-in-One","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[240,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1260,0,0,0,0,0,0]]},{"s":"PR090","c":"Infused Pre-Rolls","b":"Shatterizer","n":"Grandaddy Purple 60+ Diamonds & Shatter Infused Blunt","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[240,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1260,0,0,0,0,0,0]]},{"s":"VA082","c":"Vapes","b":"LITTI","n":"Pushin' Peach Liquid Diamonds All-in-One","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[240,0,0,0,0,0,0],[720,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1080,0,0,0,0,0,0],[1260,0,0,0,0,0,0]]},{"s":"PR091","c":"Infused Pre-Rolls","b":"Shatterizer","n":"Shatter and Kief Double Infused Pre-Roll Taster Pack","a":"Active","m":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[900,0,0,0,0,0,0],[1320,0,0,0,0,0,0],[1500,0,0,0,0,0,0]]}]};
+/* Per-unit Net Revenue (CAD) by rec-forecast SKU code, joined from
+   rec-forecast-national.xlsx · MasterCostingFY26 (col V \u201cNet Revenue\u201d, keyed on col D Product Code,
+   deduped to the ON row). 104 of 108 SKUs priced; 4 carry no costing row (CN051, PR068, PR069, PR083) -> shown as \u201c\u2014\u201d. */
+const REC_UNIT_NETREV={"CN010":6.3835,"CN048":6.3835,"EX002":8.7385,"FL006":13.9017,"FL019":14.5904,"PR085":10.7598,"PR006":9.8195,"PR008":2.3285,"PR011":2.3285,"PR015":1.8599,"PR016":1.8599,"PR018":8.2985,"PR029":2.8178,"PR032":5.3209,"PR052":7.9581,"PR057":6.4401,"PR058":6.4401,"PR045":5.2473,"PR046":4.1407,"PR070":9.8195,"PR050":8.6052,"PR075":10.0732,"PR076":10.0732,"PR077":4.907,"PR061":7.473,"PR062":5.075,"PR084":8.9719,"PR080":8.6777,"VA048":7.0239,"VA050":6.5922,"VA051":7.0239,"VA061":11.8878,"VA067":7.2988,"VA073":11.8878,"VA075":16.4698,"VA076":17.4292,"PR012":9.8195,"PR013":9.8195,"PR017":3.64,"PR025":3.64,"PR079":3.7665,"PR053":7.9581,"PR071":9.8195,"PR081":8.6777,"VA039":7.0239,"VA040":7.0239,"VA054":7.0239,"VA065":9.5851,"VA069":14.7427,"CN042":8.9021,"PR082":9.1137,"PR073":3.9788,"PR031":4.7104,"VA068":11.8878,"VA072":11.8878,"VA074":10.4876,"CN012":6.3835,"CN044":10.1634,"CN045":11.6537,"CN046":11.6537,"CN049":6.3835,"FL016":36.8302,"PR043":3.9398,"PR036":12.9015,"PR047":7.473,"PR048":3.9398,"PR056":3.4409,"PR059":7.473,"PR060":7.473,"PR063":4.7104,"PR064":4.7104,"PR065":3.4409,"PR066":7.473,"PR072":3.4409,"PR041":-6.3523,"PR001":3.7665,"PR074":10.0732,"PR078":4.6481,"PR033":4.6481,"PR040":3.6226,"VA044":7.0239,"VA059":7.0239,"VA060":10.4876,"VA062":6.5922,"VA064":6.5922,"VA066":10.4876,"VA070":10.4876,"VA071":10.4876,"VA077":11.6761,"VA078":11.6761,"PR067":7.3963,"PR086":4.4435,"PR054":6.9165,"PR055":4.5089,"PR087":8.9719,"CN053":6.1118,"VA079":7.5791,"VA080":11.524,"PR088":6.6383,"PR089":4.657,"VA081":11.524,"PR090":4.4435,"VA082":11.6761,"PR091":9.2481};
+// Per-unit LANDED COST by product code (ON province basis) — joined from the FY26 Adult-Use Costings Master.
+// 88 of the rec SKUs carry a landed cost; newer SKUs absent from the master fall back to "—" under the Landed Cost basis.
+const REC_UNIT_LANDED={"CN010":15.25,"CN012":15.25,"CN042":16.27,"CN044":19.33,"CN045":19.84,"CN046":19.84,"CN048":15.25,"CN049":15.25,"EX002":16.27,"FL006":18,"FL016":52.43,"FL019":16.21,"PR001":8.52,"PR006":15.25,"PR008":3.43,"PR011":3.43,"PR012":15.25,"PR013":15.25,"PR015":2.44,"PR016":2.44,"PR017":5.8,"PR018":12.16,"PR025":5.8,"PR029":3.43,"PR031":11.53,"PR032":10.14,"PR033":9.84,"PR036":20.97,"PR040":8.37,"PR041":0,"PR043":8.52,"PR045":13.82,"PR046":8.91,"PR047":17.82,"PR048":8.52,"PR050":19,"PR052":13.31,"PR053":13.31,"PR054":17.24,"PR055":11.32,"PR056":8,"PR057":9.22,"PR058":9.22,"PR059":17.82,"PR060":17.82,"PR061":17.82,"PR062":11.91,"PR063":11.53,"PR064":11.53,"PR065":8,"PR066":17.82,"PR067":17.74,"PR070":15.25,"PR071":15.25,"PR072":8,"PR073":5.15,"PR074":20.53,"PR075":20.53,"PR076":20.53,"PR077":10.14,"PR078":9.84,"PR079":8.52,"PR080":14.06,"PR081":14.06,"VA039":16.72,"VA040":16.72,"VA044":16.72,"VA048":16.72,"VA050":16.27,"VA051":16.72,"VA054":16.72,"VA059":16.72,"VA060":20.33,"VA061":22,"VA062":16.27,"VA064":16.27,"VA065":19.6,"VA066":20.33,"VA067":15.25,"VA068":22,"VA069":23.2,"VA070":20.33,"VA071":20.33,"VA072":22,"VA073":22,"VA074":20.33,"VA075":25,"VA076":26};
+let DOLLAR_BASIS='landed';                      // 'landed' | 'netrev' — global $ basis (Landed Cost vs Net Revenue); re-bases every $ across the sales pages
+try{const _b=localStorage.getItem('sop_dollar_basis');if(_b==='netrev'||_b==='landed')DOLLAR_BASIS=_b;}catch(e){}
+/* ---- global $ basis for the SKU-level sales pages (Overview, Category, Brand, SKU Rank, Crystal Ball) ----
+   Landed keeps each SKU's baked per-unit value (s.p, which reconciles to DATA/BRANDS revenue to the dollar).
+   Net Revenue swaps in REC_UNIT_NETREV[product code] from the FY26 Costings Master. Net rev must be >0 and at or
+   below landed; ~3% of units sit in SKUs with no reliable net-rev code (e.g. PR074, CN051) — those stay at landed. */
+function uRate(s){                              // per-unit $ for a SKU_DATA entry under the active basis
+  if(DOLLAR_BASIS==='netrev'){const n=REC_UNIT_NETREV[s.k];if(n!=null&&n>0&&n<=s.p)return n;return s.p;}
+  return s.p;
+}
+function catRevM(yr,cat,mo){                    // category-month $ (landed = baked DATA.d; net rev = baked × SKU-derived net ratio)
+  const d=DATA[yr]?.[cat]?.[mo];
+  const baked=d&&d.d!=null?d.d:null;            // keep "not in source" months blank
+  if(DOLLAR_BASIS!=='netrev'||baked==null)return baked;
+  const mp=SKU_DATA[yr]?.[cat];const mi=MONTHS.indexOf(mo);
+  if(!mp||mi<0)return baked;
+  let land=0,net=0;for(const b in mp)for(const s of mp[b]){const u=s.s[mi]||0;if(!u)continue;land+=u*s.p;net+=u*uRate(s);}
+  return land>0?baked*(net/land):baked;         // scale the trusted landed value by the blended net/landed ratio
+}
+function brRev(yr,cat,brand,mi){                // brand-month $ (landed = baked BRANDS rev; net rev = baked × SKU-derived net ratio)
+  const be=(BRANDS[yr]?.[cat]||[]).find(x=>x.b===brand);
+  const baked=be&&be.m[MONTHS[mi]]?be.m[MONTHS[mi]][1]:null;
+  if(DOLLAR_BASIS!=='netrev'||baked==null)return baked;
+  const arr=SKU_DATA[yr]?.[cat]?.[brand]||[];let land=0,net=0;
+  for(const s of arr){const u=s.s[mi]||0;if(!u)continue;land+=u*s.p;net+=u*uRate(s);}
+  return land>0?baked*(net/land):baked;         // baked BRANDS rev stays the anchor; net rev is a pure re-scale
+}
+function basisSub(){return DOLLAR_BASIS==='netrev'?'net revenue basis':'landed cost basis';}
+function basisNote(){return DOLLAR_BASIS!=='netrev'?'':'<div class="basis-note">Showing <b>Net Revenue</b> — per-unit net revenue joined by product code from the <b>FY26 Adult-Use Costings Master</b>. ~3% of units (a few low-volume SKUs) have no net-rev value on file and stay at landed cost. Switch to <b>Landed Cost</b> from the toggle at the top.</div>';}
+let recFcstView='total';                       // 'total' | 'sku' | 'prov'
+let recFcstMonth=6;                             // selected month index (0=Jan) — page shows one month at a time
+const REC_CAT_ORDER=['Pre-Rolls','Infused Pre-Rolls','Vapes','Extracts','Flower'];
+function buildRecForecast(yr){
+  const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8" rx="1"/><rect x="12" y="6" width="3" height="12" rx="1"/><rect x="17" y="13" width="3" height="5" rx="1"/></svg>`;
+  const _e=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const D=REC_FCST, MO=D.months, PV=D.prov;
+  const isLanded=DOLLAR_BASIS==='landed';
+  const NR=isLanded?REC_UNIT_LANDED:REC_UNIT_NETREV;
+  const B_LONG=isLanded?'Landed Cost':'Net Revenue';   // stat-tile label
+  const B_SHORT=isLanded?'Landed':'Net Rev';            // table column header
+  const B_LOW=isLanded?'landed cost':'net rev';         // badge suffix
+  const monthTot=Array(12).fill(0), provMonth=PV.map(()=>Array(12).fill(0)), catMonth={};
+  const provRevMonth=PV.map(()=>Array(12).fill(0)), catRevMonth={};
+  let yearRev=0, revUnits=0, uncosted=0;
+  const skus=D.recs.map(r=>{
+    const sm=Array(12).fill(0);
+    const pu=NR[r.s];
+    if(!catMonth[r.c]){catMonth[r.c]=Array(12).fill(0);catRevMonth[r.c]=Array(12).fill(0);}
+    for(let mi=0;mi<12;mi++){
+      let s=0;
+      for(let pi=0;pi<PV.length;pi++){const v=r.m[mi][pi]||0;s+=v;provMonth[pi][mi]+=v;if(pu!=null)provRevMonth[pi][mi]+=v*pu;}
+      sm[mi]=s; monthTot[mi]+=s; catMonth[r.c][mi]+=s;
+      if(pu!=null)catRevMonth[r.c][mi]+=s*pu;
+    }
+    const tot=sm.reduce((a,v)=>a+v,0);
+    const rev=pu!=null?tot*pu:null;
+    if(pu!=null){yearRev+=rev;revUnits+=tot;}else{uncosted++;}
+    return {s:r.s,c:r.c,b:r.b,n:r.n,a:r.a,sm,tot,pu,rev};
+  });
+  const yearTot=monthTot.reduce((a,v)=>a+v,0);
+  const catTok=c=>OCS_CAT_TOK[c]||'--muted';
+  // ---- single selected month focus (page renders one month at a time) ----
+  const mSel=Math.max(0,Math.min(11,recFcstMonth)), moName=MO[mSel];
+  const monUnits=monthTot[mSel];
+  const catUnitM=c=>catMonth[c]?catMonth[c][mSel]:0;
+  const catRevM=c=>catRevMonth[c]?catRevMonth[c][mSel]:0;
+  const provUnitM=pi=>provMonth[pi][mSel];
+  const provRevM=pi=>provRevMonth[pi][mSel];
+  const monRev=PV.reduce((a,_,pi)=>a+provRevMonth[pi][mSel],0);
+  const pctMo=v=>monUnits?(v/monUnits*100).toFixed(1)+'%':'—';
+  const caret=`<span class="mc-caret" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+  const vI=recFcstView==='sku'?1:recFcstView==='prov'?2:0;
+  const viewSlider=`<div class="seg-slider" id="recViewGroup" style="--n:3;--i:${vI}"><span class="seg-thumb"></span><button class="seg${recFcstView==='total'?' active':''}" data-recview="total" title="National monthly total">Total</button><button class="seg${recFcstView==='sku'?' active':''}" data-recview="sku" title="Forecast per SKU">By SKU</button><button class="seg${recFcstView==='prov'?' active':''}" data-recview="prov" title="Forecast per customer / province">By Province</button></div>`;
+  const head=`<div class="page-head"><div class="page-title">${icon}Recreational Forecast<small style="font-weight:500;color:var(--muted);margin-left:9px;letter-spacing:0">National · 2026 · ${moName}</small></div><div class="head-right" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">${viewSlider}<span class="tb tb-nu">${moName}: ${fmtN(monUnits)} units</span><span class="tb tb-rev">${fmtMoneyK(monRev)} ${B_LOW}</span></div></div>`;
+  const monSel=`<div class="mon-btns" style="justify-content:flex-start;margin:2px 0 0"><span class="mon-btns-lbl">Month</span><div class="seg-slider mon-slider" id="recMonGroup" style="--n:12;--i:${mSel}"><span class="seg-thumb"></span>${MO.map((m,i)=>`<button class="seg${i===mSel?' active':''}" data-recmon="${i}">${m}</button>`).join('')}</div></div>`;
+  const specs=[];
+  const srcNote=`<div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.55">Source: <b>${_e(D.src)}</b> — the first table on the “National 2026 v.jb” sheet. Forecast <b>units</b> by SKU, province and month; the sheet’s built-in “Total” summary row is excluded so nothing double-counts. Provinces: ON, AB, MB, SK, NL, BC, QC (NL/BC/QC carry no forecast yet). <b>${B_LONG}</b> = units × per-unit ${B_LONG} joined by product code from the <b>FY26 Adult-Use Costings Master</b> (ON province basis); ${skus.length-uncosted} of ${skus.length} SKUs priced (${fmtN(revUnits)} of ${fmtN(yearTot)} units)${uncosted?`, ${uncosted} SKUs carry no ${B_LOW} row and show “—”`:''}. Switch the <b>${B_SHORT==='Landed'?'Net Rev':'Landed Cost'}</b> basis from the toggle at the top-left. ${D.recs.length} SKUs · ${fmtN(yearTot)} units for 2026.</div>`;
+
+  let body='';
+  if(recFcstView==='total'){
+    const cats=REC_CAT_ORDER.filter(c=>catMonth[c]&&catMonth[c].some(v=>v>0));
+    let topC=cats[0]||'—'; cats.forEach(c=>{if(catUnitM(c)>catUnitM(topC))topC=c;});
+    const stats=`<div class="stat-row stat-row-4">
+      <div class="stat"><div class="k">${moName} · units</div><div class="v" style="color:var(--accent)">${fmtN(monUnits)}</div><div class="s">${(monUnits/yearTot*100).toFixed(1)}% of 2026</div></div>
+      <div class="stat"><div class="k">${moName} · ${B_LONG}</div><div class="v" style="color:var(--teal-bright)">${fmtMoneyK(monRev)}</div><div class="s">${uncosted?uncosted+' SKUs uncosted':'all SKUs priced'}</div></div>
+      <div class="stat"><div class="k">Top category · ${moName}</div><div class="v" style="font-size:15px">${_e(topC)}</div><div class="s">${fmtN(catUnitM(topC))} units</div></div>
+      <div class="stat"><div class="k">Full year · units</div><div class="v">${fmtN(yearTot)}</div><div class="s">${fmtMoneyK(yearRev)} ${B_LOW}</div></div>
+    </div>`;
+    const barBg=MO.map((_,i)=>i===mSel?cssVar('--accent'):hexA(cssVar('--accent'),.26));
+    specs.push({cid:'recTotChart',labels:MO,vals:monthTot,bg:barBg,bd:barBg});
+    const chartCard=`<div class="month-card collapsible"><div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Monthly National Forecast</div><div class="badges"><span class="tb tb-vol">${moName} highlighted</span></div></div><div class="cat-collapse"><div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="recTotChart" role="img" aria-label="Monthly national recreational forecast units, ${moName} highlighted"></canvas></div></div></div></div>`;
+    const GC=`minmax(0,1.7fr) 1fr .8fr 1.1fr`;
+    const th=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Category</div><div>Units</div><div>% mo</div><div>${B_SHORT}</div></div>`;
+    const rows=cats.map(c=>{const u=catUnitM(c);return `<div class="mrow" style="grid-template-columns:${GC}"><div class="mc-month"><span class="dot" style="background:var(${catTok(c)})"></span><span class="skf-d">${_e(c)}</span></div><div class="mc-cell teal">${fmtN(u)}</div><div class="mc-cell muted">${pctMo(u)}</div><div class="mc-cell">${fmtMoneyK(catRevM(c))}</div></div>`;}).join('');
+    const foot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}"><div class="mc-month">${moName} · ${D.recs.length} SKUs</div><div class="mc-cell">${fmtN(monUnits)}</div><div class="mc-cell muted">100%</div><div class="mc-cell">${fmtMoneyK(monRev)}</div></div>`;
+    const catCard=`<div class="month-card collapsible" style="margin-top:16px"><div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Forecast by Category · ${moName}</div><div class="badges"><span class="tb tb-nu">${fmtN(monUnits)} units</span><span class="tb tb-rev">${fmtMoneyK(monRev)} ${B_LOW}</span></div></div><div class="cat-collapse"><div class="mtable">${th}${rows}${foot}</div></div></div>`;
+    body=stats+chartCard+catCard;
+  } else if(recFcstView==='prov'){
+    const provM=PV.map((_,pi)=>provUnitM(pi));
+    const nPm=provM.filter(v=>v>0).length;
+    const stats=`<div class="stat-row stat-row-4">
+      <div class="stat"><div class="k">${moName} · units</div><div class="v" style="color:var(--accent)">${fmtN(monUnits)}</div><div class="s">${nPm} of ${PV.length} provinces</div></div>
+      <div class="stat"><div class="k">Ontario · ${moName}</div><div class="v">${fmtN(provM[0])}</div><div class="s">${pctMo(provM[0])} of month</div></div>
+      <div class="stat"><div class="k">Alberta · ${moName}</div><div class="v">${fmtN(provM[1])}</div><div class="s">${pctMo(provM[1])} of month</div></div>
+      <div class="stat"><div class="k">${moName} · ${B_LONG}</div><div class="v" style="color:var(--teal-bright)">${fmtMoneyK(monRev)}</div><div class="s">units × ${B_LOW}</div></div>
+    </div>`;
+    specs.push({cid:'recProvChart',labels:PV,vals:provM,bg:hexA(cssVar('--teal'),.8),bd:cssVar('--teal')});
+    const chartCard=`<div class="month-card collapsible"><div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--teal)"></span>Units by Province · ${moName}</div><div class="badges"><span class="tb tb-nu">${nPm} provinces</span></div></div><div class="cat-collapse"><div class="cat-sec" style="border-top:none"><div class="cat-chart-wide"><canvas id="recProvChart" role="img" aria-label="Recreational forecast units by province, ${moName}"></canvas></div></div></div></div>`;
+    const GC=`minmax(0,1.7fr) 1fr .8fr 1.1fr`;
+    const th=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Province</div><div>Units</div><div>% mo</div><div>${B_SHORT}</div></div>`;
+    const rows=PV.map((p,pi)=>{const u=provM[pi];return `<div class="mrow"${u?'':' style="opacity:.5"'} style="grid-template-columns:${GC}"><div class="mc-month"><span class="skf-d">${p}${p==='ON'?'<small>OCS · Ontario</small>':''}</span></div><div class="mc-cell teal">${u?fmtN(u):'—'}</div><div class="mc-cell muted">${u?pctMo(u):'—'}</div><div class="mc-cell">${provRevM(pi)?fmtMoneyK(provRevM(pi)):'—'}</div></div>`;}).join('');
+    const foot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}"><div class="mc-month">National · ${moName}</div><div class="mc-cell">${fmtN(monUnits)}</div><div class="mc-cell muted">100%</div><div class="mc-cell">${fmtMoneyK(monRev)}</div></div>`;
+    const provCard=`<div class="month-card collapsible" style="margin-top:16px"><div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--accent)"></span>Forecast by Customer / Province · ${moName}</div><div class="badges"><span class="tb tb-nu">${fmtN(monUnits)} units</span><span class="tb tb-rev">${fmtMoneyK(monRev)} ${B_LOW}</span></div></div><div class="cat-collapse"><div class="mtable">${th}${rows}${foot}</div></div></div>`;
+    body=stats+chartCard+provCard;
+  } else {
+    const sm2=skus.map(it=>({it,mu:it.sm[mSel],mrev:it.pu!=null?it.sm[mSel]*it.pu:null}));
+    const activeM=sm2.filter(x=>x.mu>0).sort((a,b)=>b.mu-a.mu);
+    const topM=activeM[0]||{it:{s:'—',b:''},mu:0};
+    const stats=`<div class="stat-row stat-row-4">
+      <div class="stat"><div class="k">SKUs in ${moName}</div><div class="v">${activeM.length}</div><div class="s">of ${skus.length} total</div></div>
+      <div class="stat"><div class="k">${moName} · units</div><div class="v" style="color:var(--accent)">${fmtN(monUnits)}</div><div class="s">${(monUnits/yearTot*100).toFixed(1)}% of 2026</div></div>
+      <div class="stat"><div class="k">Top SKU · ${moName}</div><div class="v" style="font-size:15px">${_e(topM.it.s)}</div><div class="s">${fmtN(topM.mu)} units</div></div>
+      <div class="stat"><div class="k">${moName} · ${B_LONG}</div><div class="v" style="color:var(--teal-bright)">${fmtMoneyK(monRev)}</div><div class="s">${activeM.length} SKUs</div></div>
+    </div>`;
+    const GC=`minmax(0,2.6fr) 1fr .8fr 1.1fr`;
+    const th=`<div class="mrow head" style="grid-template-columns:${GC}"><div>Item</div><div>Units</div><div>% mo</div><div>${B_SHORT}</div></div>`;
+    const rows=activeM.map(x=>{const it=x.it;return `<div class="mrow" style="grid-template-columns:${GC}"><div class="mc-month"><span class="dot" style="background:var(${catTok(it.c)})"></span><span class="skf-d">${_e(it.n)}<small>${_e(it.s)} · ${_e(it.a)||'—'}</small></span></div><div class="mc-cell teal">${fmtN(x.mu)}</div><div class="mc-cell muted">${pctMo(x.mu)}</div><div class="mc-cell${x.mrev==null?' muted':''}">${x.mrev!=null?fmtMoneyK(x.mrev):'—'}</div></div>`;}).join('');
+    const foot=`<div class="mrow skf-tot" style="grid-template-columns:${GC}"><div class="mc-month">${moName} · ${activeM.length} SKUs</div><div class="mc-cell">${fmtN(monUnits)}</div><div class="mc-cell muted">100%</div><div class="mc-cell">${fmtMoneyK(monRev)}</div></div>`;
+    const skuCard=`<div class="month-card collapsible" style="margin-top:16px"><div class="mc-head" role="button" tabindex="0" aria-expanded="true"><div class="mc-name">${caret}<span class="dot" style="background:var(--lav)"></span>Forecast by SKU · ${moName}</div><div class="badges"><span class="tb tb-nu">active in ${moName}, by units</span><span class="tb tb-rev">${fmtMoneyK(monRev)} ${B_LOW}</span></div></div><div class="cat-collapse"><div class="mtable">${th}${rows}${foot}</div></div></div>`;
+    body=stats+skuCard;
+  }
+  return {html:`${head}${monSel}${body}${srcNote}`, specs};
+}
+
 /* ---------- Operations · Master Data (ERP-style item / BOM / routing master) ----------
    Items: finished goods are derived from the live SKU catalog (real master).
    Components, BOM and Cycle Times are representative starter records — replace with the ERP master data. */
@@ -1762,7 +1936,7 @@ function buildOverviewForecast(yr,mon,st){
     const f=hasF(yr,t.key,mon)?DATA[yr][t.key][mon].f:null;
     let rev=0,cas=0,hasSku=false;
     const brands=(typeof SKU_DATA!=='undefined'&&SKU_DATA[yr]?.[t.key])||{};
-    for(const bn in brands){for(const s of brands[bn]){const fu=(s.f&&s.f[mi])||0;rev+=fu*s.p;if(s.u)cas+=fu/s.u;if(fu>0)hasSku=true;}}
+    for(const bn in brands){for(const s of brands[bn]){const fu=(s.f&&s.f[mi])||0;rev+=fu*uRate(s);if(s.u)cas+=fu/s.u;if(fu>0)hasSku=true;}}
     return {key:t.key,cc:catColor(t.key),f,rev:hasSku?rev:null,cas:hasSku?cas:null};
   });
   const totU=rows.reduce((a,r)=>a+(r.f||0),0);
@@ -1793,7 +1967,7 @@ function buildOverviewForecast(yr,mon,st){
   }).join('');
   const prod=`<div class="eyebrow e-cat">Forecast · ${mf(mon)} ${yr} · by category · units · revenue · cases</div><div class="prod-row">${boxes}</div>`;
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3.5-4 3 2.5L21 7"/></svg>`;
-  return {html:`<div class="page-head"><div class="page-title">${icon}Executive Summary</div>${ctrlBox(yr,true)}</div>${kpi}${prod}`, specs:[]};
+  return {html:`<div class="page-head"><div class="page-title">${icon}Executive Summary</div>${ctrlBox(yr,true)}</div>${kpi}${basisNote()}${prod}`, specs:[]};
 }
 
 /* ---------- crystal ball · forward projection ---------- */
@@ -1850,7 +2024,7 @@ function buildCrystal(yr){
     const mean=ratios.length?ratios.reduce((a,b)=>a+b,0)/ratios.length:g;
     const sd=ratios.length?Math.sqrt(ratios.reduce((a,b)=>a+(b-mean)**2,0)/ratios.length):0;
     let ytdS=0,ytdD=0,ytdC=0,hasD=false,hasC=false;
-    baseIdx.forEach(i=>{const d=DATA[yr][t.key][MONTHS[i]];if(d){ytdS+=d.s;if(d.d!=null){ytdD+=d.d;hasD=true;}if(d.c!=null){ytdC+=d.c;hasC=true;}}});
+    baseIdx.forEach(i=>{const d=DATA[yr][t.key][MONTHS[i]];if(d){ytdS+=d.s;const dv=catRevM(yr,t.key,MONTHS[i]);if(dv!=null){ytdD+=dv;hasD=true;}if(d.c!=null){ytdC+=d.c;hasC=true;}}});
     const price=(hasD&&ytdS>0)?ytdD/ytdS:null;   // $/unit from completed 2026 months
     const upc=(hasC&&ytdC>0)?ytdS/ytdC:null;      // units per case
     const ocsMo=(ocsOn&&(t.key in ocsMoByCat))?ocsMoByCat[t.key]:null;     // null → category stays on the pure momentum model (e.g. Flower)
@@ -1979,7 +2153,7 @@ function buildCrystal(yr){
     <div class="mtable">${monHead}${monRows}${monTot}</div>
   </div>`;
 
-  return {html:`${head}${kpi}${heroCard}${catSec}${tableCard}`,specs};
+  return {html:`${head}${kpi}${basisNote()}${heroCard}${catSec}${tableCard}`,specs};
 }
 
 /* ---------- single category page ---------- */
@@ -1991,7 +2165,7 @@ function buildCategory(yr,catKey){
   const showYoY=yr==2026;
 
   let totF=0,totS=0,hasAnyF=false,totD=0,totC=0,hasD=false,hasC=false;
-  cm.forEach(m=>{const d=DATA[yr][catKey][m];if(d){totS+=d.s;if(hasF(yr,catKey,m)){totF+=d.f;hasAnyF=true;}if(d.d!=null){totD+=d.d;hasD=true;}if(d.c!=null){totC+=d.c;hasC=true;}}});
+  cm.forEach(m=>{const d=DATA[yr][catKey][m];if(d){totS+=d.s;if(hasF(yr,catKey,m)){totF+=d.f;hasAnyF=true;}const dv=catRevM(yr,catKey,m);if(dv!=null){totD+=dv;hasD=true;}if(d.c!=null){totC+=d.c;hasC=true;}}});
   const showDC=hasD||hasC;
   const att=hasAnyF&&totF>0?totS/totF:null;
   const acc=att!=null?(att-1)*100:null;
@@ -2008,7 +2182,7 @@ function buildCategory(yr,catKey){
   const statRow=`
     <div class="stat-row">
       <div class="stat"><div class="k">Total sold · YTD</div><div class="v teal">${fmtK(totS)}</div><div class="s">${cm.length} mo actual</div></div>
-      <div class="stat"><div class="k">Revenue · YTD</div><div class="v" style="color:var(--accent)">${hasD?fmtMoneyK(totD):'—'}</div><div class="s">${hasD?'sold-through value':'not in source'}</div></div>
+      <div class="stat"><div class="k">Revenue · YTD</div><div class="v" style="color:var(--accent)">${hasD?fmtMoneyK(totD):'—'}</div><div class="s">${hasD?basisSub():'not in source'}</div></div>
       <div class="stat"><div class="k">Cases · YTD</div><div class="v">${hasC?fmtK(totC):'—'}</div><div class="s">${hasC?'cases sold':'not in source'}</div></div>
       <div class="stat"><div class="k">Total forecast</div><div class="v lav">${hasAnyF?fmtK(totF):'—'}</div><div class="s">${hasAnyF?'units planned':'no plan on file'}</div></div>
       <div class="stat"><div class="k">vs forecast</div><div class="v" style="color:${acc!=null&&acc<0?'var(--coral)':'var(--teal)'}">${acc!=null?signPct(acc):'—'}</div><div class="s">${att!=null?Math.round(att*100)+'% attained':'no plan'}</div></div>
@@ -2035,7 +2209,7 @@ function buildCategory(yr,catKey){
     return `<div class="mrow" style="grid-template-columns:${gcol}">
       <div class="mc-month"><span class="mstat ${live?'live':'final'}">${live?'In progress':'Final'}</span><span class="dot" style="background:${color}"></span>${mf(m)}</div>
       <div class="mc-cell teal">${fmtN(d.s)}</div>
-      ${showDC?`<div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(d.d)}</div><div class="mc-cell">${fmtN(d.c)}</div>`:''}
+      ${showDC?`<div class="mc-cell" style="color:var(--accent)">${fmtMoneyK(catRevM(yr,catKey,m))}</div><div class="mc-cell">${fmtN(d.c)}</div>`:''}
       <div class="mc-cell lav">${tHasF?fmtN(d.f):'—'}</div>
       <div class="mc-cell ${tAcc==null?'muted':tAcc>=0?'pos':'neg'}">${tAcc!=null?signPct(tAcc):'—'}</div>
       <div class="mc-cell ${tMom==null?'muted':tMom>=0?'pos':'neg'}">${tMom!=null?signPct(tMom):'—'}</div>
@@ -2051,24 +2225,20 @@ function buildCategory(yr,catKey){
 
   let momPanel='';
   const {lm,pm,pmYr,mode}=cmpPair(cm,yr);
-  const cmpLbl=mode==='yoy'?'YoY':'MoM';
-  const cmpFull=mode==='yoy'?'Year-Over-Year':'Month-Over-Month';
+  const cmpLbl=mode==='yoy'?'YoY':mode==='ab'?'A/B':'MoM';
+  const cmpFull=mode==='yoy'?'Year-Over-Year':mode==='ab'?'Custom Period':'Month-Over-Month';
   const pmLab=pmLabel(pm,pmYr,yr);
   if(pm&&cmpMode!=='fcst'){
     const a=DATA[pmYr]?.[catKey]?.[pm]||{}, b=DATA[yr][catKey][lm]||{};
+    const aD=catRevM(pmYr,catKey,pm), bD=catRevM(yr,catKey,lm);
     const uPct=a.s>0?(b.s-a.s)/a.s*100:null;
-    const dPct=(a.d!=null&&b.d!=null&&a.d>0)?(b.d-a.d)/a.d*100:null;
+    const dPct=(aD!=null&&bD!=null&&aD>0)?(bD-aD)/aD*100:null;
     const cPct=(a.c!=null&&b.c!=null&&a.c>0)?(b.c-a.c)/a.c*100:null;
     const dirOf=p=>p==null?'':p>=0?'pos':'neg';
     const arrowOf=p=>p==null?'·':p>=0?'▲':'▼';
     const momCid=`mom-${yr}-${catKey.replace(/[^a-z]/gi,'')}`;
-    const idxOf=(prev,cur)=>(prev!=null&&cur!=null&&prev>0)?cur/prev*100:null;
-    specs.push({cid:momCid,kind:'buckets',color,
-      labels:['Revenue','Units','Cases'],pmName:pmLab,lmName:mf(lm),
-      pmIdx:[(a.d!=null&&a.d>0)?100:null,a.s>0?100:null,(a.c!=null&&a.c>0)?100:null],
-      lmIdx:[idxOf(a.d,b.d),idxOf(a.s,b.s),idxOf(a.c,b.c)],
-      raw:{prev:[a.d??null,a.s??null,a.c??null],cur:[b.d??null,b.s??null,b.c??null]},
-      fmt:['money','n','n']});
+    const momHasF=fvals.some(v=>v!=null);
+    specs.push({cid:momCid,kind:'spark',labels,vals:svals,fvals:momHasF?fvals:null,color});
     const chip=p=>p==null?'<span class="mom-chip">—</span>':`<span class="mom-chip ${dirOf(p)}">${arrowOf(p)} ${signPct(p)}</span>`;
     const cmpRow=(label,pv,cv,delta,sm,col)=>`<div class="cmp-lbl"${col?` style="color:${col}"`:''}>${label}</div><div class="cmp-v${sm?' sm':''}">${pv}</div><div class="cmp-arr">→</div><div class="cmp-v${sm?' sm':''}">${cv}</div><div class="cmp-dcell">${delta}</div>`;
     momPanel=`<div class="month-card mom-analysis">
@@ -2080,14 +2250,15 @@ function buildCategory(yr,catKey){
         <div class="mom-compare">
           <div class="cmp-tbl">
             <div class="cmp-h"></div><div class="cmp-h">${pmLab}</div><div class="cmp-h"></div><div class="cmp-h">${mf(lm)}</div><div class="cmp-h">Δ ${cmpLbl}</div>
-            ${cmpRow('Revenue',fmtMoneyK(a.d),fmtMoneyK(b.d),chip(dPct),true,'var(--teal)')}
+            ${cmpRow('Revenue',fmtMoneyK(aD),fmtMoneyK(bD),chip(dPct),true,'var(--teal)')}
             ${cmpRow('Units',fmtN(a.s),fmtN(b.s),chip(uPct),false,'var(--accent)')}
             ${cmpRow('Cases',fmtN(a.c),fmtN(b.c),chip(cPct),true,'var(--lav)')}
           </div>
         </div>
         <div class="mom-chartbox">
-          <div class="mom-chart-h"><canvas id="${momCid}" role="img" aria-label="${catKey} ${pmLab} vs ${mf(lm)} indexed by bucket"></canvas></div>
-          <div class="mom-cap">Indexed to ${pmLab} = 100% · hover bars for actuals</div>
+          <div class="mom-chart-h"><canvas id="${momCid}" role="img" aria-label="${catKey} monthly sold vs forecast trend ${yr}"></canvas></div>
+          ${momHasF?`<div class="spark-leg"><span><i style="border-color:${color}"></i>Sold</span><span><i class="dash" style="border-color:${hexA(color,.6)}"></i>Forecast</span></div>`:''}
+          <div class="mom-cap">Monthly units sold${momHasF?' vs forecast':''} · full ${yr} trend</div>
         </div>
       </div>
     </div>`;
@@ -2116,7 +2287,8 @@ function buildCategory(yr,catKey){
       const hasSku=!!(typeof SKU_DATA!=='undefined'&&SKU_DATA[yr]&&SKU_DATA[yr][catKey]&&SKU_DATA[yr][catKey][br.b]);
       const capAttrs=hasSku?` data-cat="${catKey}" data-brand="${br.b}" role="button" tabindex="0" aria-label="View ${br.b} SKU breakdown" title="View ${br.b} SKUs"`:'';
       const cap=`<div class="brand-cap"${capAttrs}>${inner}</div>`;
-      return `<div class="brand-box">${cap}${metricRow('Revenue','var(--teal)',pd[1],ld[1],true)}${metricRow('Units','var(--accent)',pd[0],ld[0],false)}${metricRow('Cases','var(--lav)',pd[2],ld[2],false)}</div>`;
+      const pRev=brRev(pmYr,catKey,br.b,MONTHS.indexOf(pm)), lRev=brRev(yr,catKey,br.b,MONTHS.indexOf(lm));
+      return `<div class="brand-box">${cap}${metricRow('Revenue','var(--teal)',pRev,lRev,true)}${metricRow('Units','var(--accent)',pd[0],ld[0],false)}${metricRow('Cases','var(--lav)',pd[2],ld[2],false)}</div>`;
     }).filter(Boolean).join('');
     if(boxes){
       brandPanel=`<div class="month-card brand-mom">
@@ -2173,7 +2345,7 @@ function buildCategory(yr,catKey){
     const mi=MONTHS.indexOf(focusMon);
     const brands=SKU_DATA[yr]?.[catKey]||{};
     const skf=[];
-    for(const bn in brands){for(const s of brands[bn]){const fu=(s.f&&s.f[mi])||0;if(fu>0)skf.push({b:bn,k:s.k,d:s.d,p:s.p,u:s.u,fu});}}
+    for(const bn in brands){for(const s of brands[bn]){const fu=(s.f&&s.f[mi])||0;if(fu>0)skf.push({b:bn,k:s.k,d:s.d,p:uRate(s),u:s.u,fu});}}
     skf.sort((a,b)=>b.fu-a.fu);
     let tFu=0,tRev=0,tCas=0;
     skf.forEach(x=>{tFu+=x.fu;tRev+=x.fu*x.p;tCas+=x.u?x.fu/x.u:0;});
@@ -2216,7 +2388,7 @@ function buildCategory(yr,catKey){
     </div>`;
   }
 
-  const html=`<div class="page-head"><div class="page-title"><span class="dot" style="background:${color};width:12px;height:12px"></span>${catKey}</div><div class="head-right">${ctrlBox(yr)}</div></div>
+  const html=`<div class="page-head cat-page-head"><div class="cat-head-top"><div class="page-title"><span class="dot" style="background:${color};width:12px;height:12px"></span>${catKey}</div>${exportBox()}</div><div class="cat-ctrl-row">${ctrlBox(yr)}</div></div>${basisNote()}
     ${forecastPanel}${momPanel}${brandPanel}${cmpMode!=='fcst'?legend:''}
     ${breakdownCard}`;
   return {html,specs};
@@ -2227,7 +2399,7 @@ function buildBrand(yr,brand){
   const specs=[];
   const cm=completeMonths(yr);
   const {lm,pm,pmYr,mode}=cmpPair(cm,yr);
-  const cmpLbl=mode==='yoy'?'YoY':'MoM';
+  const cmpLbl=mode==='yoy'?'YoY':mode==='ab'?'A/B':'MoM';
   const yoy=mode==='yoy'&&pm!=null;
   // MoM compares to the prior month within the same SKU series; YoY compares to the same month one year back (matched by SKU key).
   const showPrior=yoy?true:(pm!=null&&String(pmYr)===String(yr));
@@ -2245,7 +2417,7 @@ function buildBrand(yr,brand){
     const priorByKey=priorList?Object.fromEntries(priorList.map(s=>[s.k,s])):null;
     const rows=list.map(s=>{
       const u=s.s[li]||0, pu=yoy?((priorByKey&&priorByKey[s.k])?(priorByKey[s.k].s[li]||0):0):(pi>=0?(s.s[pi]||0):0);
-      const rev=u*s.p, prev=pu*s.p, cas=s.u?u/s.u:0, pcas=s.u?pu/s.u:0;
+      const rev=u*uRate(s), prev=pu*uRate(s), cas=s.u?u/s.u:0, pcas=s.u?pu/s.u:0;
       return {k:s.k,d:s.d,u,pu,rev,prev,cas,pcas,
         momRev:prev>0?(rev-prev)/prev*100:null,
         momU:pu>0?(u-pu)/pu*100:null,
@@ -2309,6 +2481,7 @@ function renderNav(yr,active){
       const pg='planning:fcst:'+c.key;
       html+=`<button class="nav-item${active===pg?' active':''}" data-page="${pg}"><span class="ni-name">${c.name}</span></button>`;
     });
+    html+=`<button class="nav-item${active==='planning:recfcst'?' active':''}" data-page="planning:recfcst"><span class="ni-name">Recreational Forecast</span></button>`;
     html+=`<div class="nav-sec">Schedules</div>`;
     PROD_SITES.forEach(s=>{
       const pg='planning:prod:'+s.key;
@@ -2355,8 +2528,14 @@ function showPage(yr,page){
   if(cmpMode==='yoy'&&completeMonths(String(Number(yr)-1)).length===0)cmpMode='mom'; // no prior year to compare against
   if(cmpMode==='fcst'&&page.slice(0,6)==='brand:')cmpMode='mom'; // forecast is category-level; SKU data has no plan
   if(cmpMode==='fcst'&&page==='skurank')cmpMode='mom'; // ranking is actuals-only; keep the month slider on complete months
+  if(cmpMode==='ab'&&page==='skurank')cmpMode='mom'; // ranking has its own month control; A/B's two-tap bar doesn't apply here
+  if(cmpMode==='ab'){ // A/B needs two closed months in the current year; seed/repair the pick set (but leave an in-progress single tap alone)
+    const cmAb=completeMonths(yr);
+    if(cmAb.length<2)cmpMode='mom';
+    else{const valid=abPick.filter(m=>cmAb.includes(m));if(valid.length===0)seedAb(yr);else if(valid.length!==abPick.length)abPick=valid;}
+  }
   const main=document.getElementById('main');
-  const r= page==='overview'?buildOverview(yr):page==='skurank'?buildSkuRank(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:fcst:'?buildForecast(yr,page.slice(14)):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
+  const r= page==='overview'?buildOverview(yr):page==='skurank'?buildSkuRank(yr):page==='planning:recfcst'?buildRecForecast(yr):page==='planning:flower'?buildFlowerSchedule(yr):page.slice(0,14)==='planning:fcst:'?buildForecast(yr,page.slice(14)):page.slice(0,14)==='planning:prod:'?buildProductionSchedule(yr,page.slice(14)):isOpsPage(page)?buildOperations(yr,page):page==='crystal'?buildCrystal(yr):page.slice(0,6)==='brand:'?buildBrand(yr,page.slice(6)):buildCategory(yr,page);
   main.innerHTML=r.html;
   (r.specs||[]).forEach(s=>charts.push(s.kind==='spark'?makeSpark(s):s.kind==='group'?makeGroup(s):s.kind==='flower'?makeFlower(s):s.kind==='buckets'?makeMomBuckets(s):s.kind==='crystal'?makeCrystal(s):makeChart(s.cid,s.labels,s.vals,s.bg,s.bd)));
   document.querySelectorAll('#nav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
@@ -2368,16 +2547,19 @@ function showPage(yr,page){
 }
 // Reflect comparison-mode availability + selection in the header toggle (YoY needs a prior year; hide the toggle on the overview).
 function syncCmpUI(){
-  const noCtrl=curPage==='overview'||curPage==='crystal'||curPage==='skurank'||isPlanningPage(curPage)||isOpsPage(curPage); // pages with no comparison toggle
+  const noCtrl=curPage==='crystal'||curPage==='skurank'||isPlanningPage(curPage)||isOpsPage(curPage); // pages with no comparison toggle (overview shows MoM + A/B only)
   const es=document.getElementById('exportSlot');
-  if(es)es.classList.toggle('hidden',!currentExportModel()||curPage==='planning:fcst:ocs'); // export shows wherever a model exists; on the OCS page it lives in the table card header instead
+  const onCat=TYPES.some(t=>t.key===curPage); // category pages render their own Excel button above the year slider
+  if(es)es.classList.toggle('hidden',!currentExportModel()||curPage==='planning:fcst:ocs'||onCat); // export shows wherever a model exists; on the OCS + category pages it lives in the page body instead
   const cg=document.getElementById('cmpGroup');
   if(!cg)return;
   const hasPrev=completeMonths(String(Number(curYr)-1)).length>0;
   const yoyBtn=cg.querySelector('[data-cmp="yoy"]');
-  if(yoyBtn)yoyBtn.disabled=!hasPrev;
+  if(yoyBtn)yoyBtn.disabled=!hasPrev||curPage==='overview'; // exec summary offers only MoM + A/B (brand strip has no cross-year SKU data for YoY)
   const fcstBtn=cg.querySelector('[data-cmp="fcst"]');
-  if(fcstBtn)fcstBtn.disabled=curPage.slice(0,6)==='brand:'; // forecast is category-level only
+  if(fcstBtn)fcstBtn.disabled=curPage.slice(0,6)==='brand:'||curPage==='overview'; // forecast is category-level only; on the overview it's driven by picking a planned month
+  const abBtn=cg.querySelector('[data-cmp="ab"]');
+  if(abBtn)abBtn.disabled=completeMonths(curYr).length<2; // A/B needs at least two closed months to compare
   [...cg.querySelectorAll('.seg')].forEach((p,i)=>{const on=p.dataset.cmp===cmpMode;p.classList.toggle('active',on);if(on)cg.style.setProperty('--i',i);});
   cg.classList.toggle('hidden',noCtrl);
 }
@@ -2410,6 +2592,7 @@ function render(yr){
 }
 
 let curYr='2026',curPage='overview',selMonth=null,cmpMode='mom',skuRankMetric='rev',skuRankPeriod='mon',skuRankGroup='brand';
+let abPick=[]; // A/B mode: the two closed months the user tapped (0–2), compared chronologically
 const skuRankFilter=new Set();
 let lastSales='overview',lastOps='ops:'+OPS_SECTIONS[0].key,lastPlanning='planning:fcst:'+FORECAST_CUSTOMERS[0].key; // remember the last page visited in each mode so the switch returns you there
 const CASH_UNLOCK_KEY='cash_unlock_v1';
@@ -2451,6 +2634,24 @@ document.addEventListener('click',e=>{
   ocsFcstMode=m;
   showPage(curYr,'planning:fcst:ocs');
 });
+// Recreational Forecast: Total ⇄ by SKU ⇄ by Province view toggle
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('#recViewGroup .seg[data-recview]');
+  if(!b)return;
+  const v=b.dataset.recview;
+  if(v===recFcstView)return;
+  recFcstView=v;
+  showPage(curYr,'planning:recfcst');
+});
+// Recreational Forecast: single-month selector (page shows one month at a time)
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('#recMonGroup .seg[data-recmon]');
+  if(!b)return;
+  const mi=+b.dataset.recmon;
+  if(mi===recFcstMonth)return;
+  recFcstMonth=mi;
+  showPage(curYr,'planning:recfcst');
+});
 // OCS forecast: weekly .xlsx upload + reset (parsed client-side, cached in localStorage)
 document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('#ocsUpBtn')){const fi=document.getElementById('ocsFileInput');if(fi)fi.click();return;}
@@ -2473,7 +2674,14 @@ document.addEventListener('change',e=>{
 document.addEventListener('click',e=>{
   const mb=e.target.closest&&e.target.closest('.mon-slider .seg[data-mon]');
   if(!mb||mb.disabled)return;
-  selMonth=mb.dataset.mon;
+  const m=mb.dataset.mon;
+  if(mb.closest('.ab-slider')){ // A/B month bar → two-tap: 1st tap sets the baseline, 2nd completes the pair, a 3rd starts over
+    if(abPick.length!==1)abPick=[m];
+    else if(abPick[0]!==m)abPick=[abPick[0],m];
+    showPage(curYr,curPage);
+    return;
+  }
+  selMonth=m;
   showPage(curYr,curPage);
 });
 document.addEventListener('click',e=>{
@@ -2591,6 +2799,22 @@ if(pwForm)pwForm.addEventListener('submit',e=>{e.preventDefault();tryUnlock();})
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pwOverlay&&pwOverlay.classList.contains('open'))closePw();});
 applyCashLock();
 
+/* ---------- dollar basis switch (Landed Cost / Net Revenue) ---------- */
+const basisGroup=document.getElementById('basisGroup');
+function applyBasis(){
+  if(!basisGroup)return;
+  const i=DOLLAR_BASIS==='netrev'?1:0;
+  basisGroup.style.setProperty('--i',i);
+  basisGroup.querySelectorAll('.seg').forEach(b=>b.classList.toggle('active',b.dataset.basis===DOLLAR_BASIS));
+}
+if(basisGroup)basisGroup.addEventListener('click',e=>{
+  const b=e.target.closest('.seg[data-basis]');if(!b)return;
+  const nb=b.dataset.basis;if(nb===DOLLAR_BASIS)return;
+  DOLLAR_BASIS=nb;try{localStorage.setItem('sop_dollar_basis',nb);}catch(e){}
+  applyBasis();showPage(curYr,curPage);
+});
+applyBasis();
+
 /* ---------- Supabase uploader sign-in modal ---------- */
 const sbOverlay=document.getElementById('sbOverlay');
 const sbForm=document.getElementById('sbForm');
@@ -2641,7 +2865,7 @@ function openSku(cat,brand){
   const li=MONTHS.indexOf(lm), pi=(showPrior&&!yoy)?MONTHS.indexOf(pm):-1;
   const rows=list.map(s=>{
     const u=s.s[li]||0, pu=yoy?((priorByKey&&priorByKey[s.k])?(priorByKey[s.k].s[li]||0):0):(pi>=0?(s.s[pi]||0):0);
-    const rev=u*s.p, prev=pu*s.p, cas=s.u?u/s.u:0, pcas=s.u?pu/s.u:0;
+    const rev=u*uRate(s), prev=pu*uRate(s), cas=s.u?u/s.u:0, pcas=s.u?pu/s.u:0;
     return {k:s.k,d:s.d,u,pu,rev,prev,cas,pcas,
       momRev:prev>0?(rev-prev)/prev*100:null,
       momU:pu>0?(u-pu)/pu*100:null,
