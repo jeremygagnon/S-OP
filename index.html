@@ -626,7 +626,7 @@ body:not(.cash-lock) #cashToggle{color:var(--teal-bright);}
     <div class="seg-slider" id="modeGroup" style="--n:3;--i:0"><span class="seg-thumb"></span><button class="seg active" data-mode="sales">Sales</button><button class="seg" data-mode="operations">Operations</button><button class="seg" data-mode="planning">Planning</button></div>
   </div>
   <div class="period">
-    <div class="seg-slider" id="basisGroup" style="--n:2;--i:0" title="Dollar basis — Landed Cost (invoice price to the board) vs Net Revenue (recognized after board fees + excise)"><span class="seg-thumb"></span><button class="seg active" data-basis="landed">Landed Cost</button><button class="seg" data-basis="netrev">Net Rev</button></div>
+    <div class="seg-slider" id="basisGroup" style="--n:2;--i:0" title="Dollar basis — Net Revenue (recognized after board fees + excise) vs Landed Cost (invoice price to the board)"><span class="seg-thumb"></span><button class="seg active" data-basis="netrev">Net Rev</button><button class="seg" data-basis="landed">Landed Cost</button></div>
     <button class="theme-toggle" id="cashToggle" title="Reveal $ amounts" aria-label="Reveal dollar amounts"></button>
     <span id="exportSlot"></span>
     <button class="theme-toggle" id="themeToggle" title="Toggle light / dark theme" aria-label="Toggle light / dark theme"></button>
@@ -1018,7 +1018,8 @@ function buildOverview(yr){
     }
   }
   const icon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3.5-4 3 2.5L21 7"/></svg>`;
-  return {html:`<div class="page-head"><div class="page-title">${icon}Executive Summary</div>${ctrlBox(yr,true)}</div>${kpi}${basisNote()}${brandStrip}${prod}`, specs};
+  const pivBtn=`<div class="exp-box" role="group" aria-label="Export booked-PO pivots"><button type="button" class="exp-btn" data-export="execpivots" title="Download Recreational booked-PO pivot tables (.xlsx) — sourced from the PO Master Tracker, not the on-screen estimate" aria-label="Download booked-PO pivot tables as Excel">${XLS_SVG}<span>Excel</span></button></div>`;
+  return {html:`<div class="page-head cat-page-head"><div class="cat-head-top"><div class="page-title">${icon}Executive Summary</div>${pivBtn}</div><div class="cat-ctrl-row">${ctrlBox(yr,true)}</div></div>${kpi}${basisNote()}${brandStrip}${prod}`, specs};
 }
 
 /* ---------- SKU Ranking — per brand, SKUs ranked by units sold and revenue ---------- */
@@ -1453,7 +1454,7 @@ const REC_UNIT_NETREV={"CN010":6.3835,"CN048":6.3835,"EX002":8.7385,"FL006":13.9
 // Per-unit LANDED COST by product code (ON province basis) — joined from the FY26 Adult-Use Costings Master.
 // 88 of the rec SKUs carry a landed cost; newer SKUs absent from the master fall back to "—" under the Landed Cost basis.
 const REC_UNIT_LANDED={"CN010":15.25,"CN012":15.25,"CN042":16.27,"CN044":19.33,"CN045":19.84,"CN046":19.84,"CN048":15.25,"CN049":15.25,"EX002":16.27,"FL006":18,"FL016":52.43,"FL019":16.21,"PR001":8.52,"PR006":15.25,"PR008":3.43,"PR011":3.43,"PR012":15.25,"PR013":15.25,"PR015":2.44,"PR016":2.44,"PR017":5.8,"PR018":12.16,"PR025":5.8,"PR029":3.43,"PR031":11.53,"PR032":10.14,"PR033":9.84,"PR036":20.97,"PR040":8.37,"PR041":0,"PR043":8.52,"PR045":13.82,"PR046":8.91,"PR047":17.82,"PR048":8.52,"PR050":19,"PR052":13.31,"PR053":13.31,"PR054":17.24,"PR055":11.32,"PR056":8,"PR057":9.22,"PR058":9.22,"PR059":17.82,"PR060":17.82,"PR061":17.82,"PR062":11.91,"PR063":11.53,"PR064":11.53,"PR065":8,"PR066":17.82,"PR067":17.74,"PR070":15.25,"PR071":15.25,"PR072":8,"PR073":5.15,"PR074":20.53,"PR075":20.53,"PR076":20.53,"PR077":10.14,"PR078":9.84,"PR079":8.52,"PR080":14.06,"PR081":14.06,"VA039":16.72,"VA040":16.72,"VA044":16.72,"VA048":16.72,"VA050":16.27,"VA051":16.72,"VA054":16.72,"VA059":16.72,"VA060":20.33,"VA061":22,"VA062":16.27,"VA064":16.27,"VA065":19.6,"VA066":20.33,"VA067":15.25,"VA068":22,"VA069":23.2,"VA070":20.33,"VA071":20.33,"VA072":22,"VA073":22,"VA074":20.33,"VA075":25,"VA076":26};
-let DOLLAR_BASIS='landed';                      // 'landed' | 'netrev' — global $ basis (Landed Cost vs Net Revenue); re-bases every $ across the sales pages
+let DOLLAR_BASIS='netrev';                      // 'netrev' | 'landed' — global $ basis (Net Revenue is the primary view, Landed Cost secondary); re-bases every $ across the sales pages
 try{const _b=localStorage.getItem('sop_dollar_basis');if(_b==='netrev'||_b==='landed')DOLLAR_BASIS=_b;}catch(e){}
 /* ---- global $ basis for the SKU-level sales pages (Overview, Category, Brand, SKU Rank, Crystal Ball) ----
    Landed keeps each SKU's baked per-unit value (s.p, which reconciles to DATA/BRANDS revenue to the dollar).
@@ -2803,7 +2804,7 @@ applyCashLock();
 const basisGroup=document.getElementById('basisGroup');
 function applyBasis(){
   if(!basisGroup)return;
-  const i=DOLLAR_BASIS==='netrev'?1:0;
+  const i=DOLLAR_BASIS==='netrev'?0:1;
   basisGroup.style.setProperty('--i',i);
   basisGroup.querySelectorAll('.seg').forEach(b=>b.classList.toggle('active',b.dataset.basis===DOLLAR_BASIS));
 }
@@ -3051,6 +3052,62 @@ function ocsForecastExportModel(kind){
     filename:'Mera_OCS_'+(isBrand?'Brand':'Category')+'-'+NOUN+'-Forecast_'+String(F.asOf||'').replace(/[^0-9]/g,''),
     sheet:isBrand?'OCS Brand Forecast':'OCS Order Forecast',cols,rows,totals};
 }
+
+/* ---------- Exec-summary booked-PO pivot export ----------
+   Snapshot of the June-10 PO Master Tracker, Channel = Recreational, value = Mera Net Revenue.
+   Reproduces the 'Rec - Pivots' + 'Rec tables' cross-tabs to the dollar. This is BOOKED purchase-order
+   revenue, NOT the dashboard's units×rate estimate — the workbook title/subtitle disclose that. */
+const REC_PIVOTS={"source":"June-10 PO Master Tracker (booked POs, Channel=Recreational)","months":["January","February","March","April","May","June","July"],"poMonths":["February","March","April","May","June"],"province":[["AB",[17695.57,18338.89,93530.91,48564.53,59444.33,4000.39,0.0],241574.62],["MB",[5546.55,9262.14,2921.91,3536.43,3322.41,2438.43,0.0],27027.87],["ON",[422931.89,853798.41,802345.14,835921.81,533595.04,597885.41,218434.03],4264911.73]],"brand":[["Buddy Blooms",[125789.86,260275.6,216472.92,286968.79,179926.33,171876.43,61542.78],1302852.71],["Countryside",[66104.91,246626.69,193012.19,185942.15,108760.84,166381.69,84487.02],1051315.49],["Countryside Harvest Reserve",[3584.27,27321.62,19071.03,36113.23,21099.87,26915.85,8385.84],142491.71],["Ellevia",[16854.02,32937.81,29856.89,27162.95,21609.0,21044.76,14261.21],163726.64],["Greazy",[71132.21,70215.55,76795.52,53411.64,29607.91,31801.06,4597.24],337561.13],["Hunny Pot",[23230.14,29325.0,34840.24,44097.03,35023.64,24408.56,0.0],190924.61],["Litti",[96466.86,146018.47,233369.0,140420.83,123304.14,80861.39,14906.11],835346.8],["Shatterizer",[43011.74,68678.7,95380.18,113906.17,77030.05,81034.49,30253.84],509295.17]],"category":[["Concentrates",[38071.58,47562.21,59784.82,50591.99,20590.8,25691.38,4902.53],247195.31],["Dried Flower",[1138.05,350.17,962.97,2188.57,1050.51,2013.48,0.0],7703.75],["Extract",[16854.02,32937.81,29856.89,27162.95,21609.0,21044.76,14261.21],163726.64],["Infused Pre-Roll",[48720.4,95658.84,125899.5,115535.94,86078.76,84357.53,29948.54],586199.51],["Pre-Roll",[205085.26,546832.59,444917.54,544949.46,333976.21,380428.5,154415.64],2610605.2],["Vapes",[125961.8,147047.65,225031.52,131912.73,119710.84,82781.19,14906.11],847351.84],["Whole Dried Flower",[10342.88,11010.17,12344.73,15681.15,13345.66,8007.39,0.0],70731.98]],"onFlowPO":[[" PO-0103789-1",[0.0,0.0,12976.22,0.0,0.0],12976.22],[" PO-0104851-1",[0.0,0.0,15770.25,0.0,0.0],15770.25],[" PO-0105207-1",[0.0,0.0,0.0,20905.2,0.0],20905.2],["100755-2",[20702.7,0.0,0.0,0.0,0.0],20702.7],["101113-1",[18315.6,0.0,0.0,0.0,0.0],18315.6],["101458-1",[14307.56,0.0,0.0,0.0,0.0],14307.56],["101869-1",[18132.08,0.0,0.0,0.0,0.0],18132.08],["102232-1",[0.0,20435.1,0.0,0.0,0.0],20435.1],["102454-1",[0.0,17420.42,0.0,0.0,0.0],17420.42],["PO-0102878-1",[0.0,17877.81,0.0,0.0,0.0],17877.81],["PO-0103221-1",[0.0,20059.36,0.0,0.0,0.0],20059.36],["PO-0103469-1",[0.0,0.0,16049.08,0.0,0.0],16049.08],["PO-0104145-1",[0.0,0.0,14471.96,0.0,0.0],14471.96],["PO-0104452-1",[0.0,0.0,42521.26,0.0,0.0],42521.26],["PO-0105559-1",[0.0,0.0,0.0,18843.25,0.0],18843.25],["PO-0105883-1",[0.0,0.0,0.0,19636.82,0.0],19636.82],["PO-0106275-1",[0.0,0.0,0.0,18359.19,0.0],18359.19],["PO-0106635-1",[0.0,0.0,0.0,0.0,16556.84],16556.84],["PO-0107002-1",[0.0,0.0,0.0,0.0,15591.68],15591.68],["PO-0107367-1",[0.0,0.0,0.0,0.0,12721.91],12721.91],["PO-0107451-1",[0.0,0.0,0.0,0.0,12049.4],12049.4],["PO-0107749-1",[0.0,0.0,0.0,0.0,18729.79],18729.79]],"notes":{"ON":"June $95K OCS PO - July delivery due to flower on-hand","AB":"IRC: May spend grew 39.5% vs market decline of 3.63%","MB":"IRC: May spend >2X against a market decline of 2.46%","Buddy Blooms":"July: ~$66K PC2 ST SKU launch","Greazy":"July: ~$3K PC2 ST SKU launch"}};
+function _recPivBlock(aoa,title,months,rows,opts){
+  opts=opts||{};
+  // money cell at a given style index; 0/empty → bordered blank (matches the sparse source pivots),
+  // redaction (•••) under CASH_LOCKED is preserved but still carries the border style.
+  const money=(v,style)=>{
+    if(!v)return {v:'',s:style};
+    const c=fmtCellXlsx(v,'money');
+    return (typeof c==='object')?{v:c.v,t:'n',s:style}:{v:c,s:style};
+  };
+  aoa.push([{v:title,s:6}]);
+  aoa.push([{v:'Channel: Recreational'+(opts.filter?' · '+opts.filter:''),s:0}]);
+  const hdr=[{v:'Row Labels',s:4}].concat(months.map(m=>({v:mf(m),s:4}))).concat([{v:'Grand Total',s:4}]);
+  if(opts.notes)hdr.push({v:'Notes',s:4});
+  aoa.push(hdr);
+  const colTot=months.map(()=>0); let grand=0;
+  rows.forEach(row=>{
+    const label=row[0],vals=row[1],total=row[2];
+    const r=[{v:label,s:3}];
+    vals.forEach((v,i)=>{r.push(money(v,2));colTot[i]+=v;});
+    r.push(money(total,2)); grand+=total;
+    if(opts.notes)r.push({v:REC_PIVOTS.notes[label]||'',s:9});
+    aoa.push(r);
+  });
+  const tr=[{v:'Grand Total',s:8}];
+  colTot.forEach(v=>tr.push(money(v,7)));
+  tr.push(money(grand,7));
+  if(opts.notes)tr.push({v:'',s:8});
+  aoa.push(tr);
+  aoa.push([]);
+}
+function exportExecPivots(){
+  const P=REC_PIVOTS;
+  const disc='Source: '+P.source+' — booked purchase orders, not the dashboard units×rate estimate · exported '+new Date().toISOString().slice(0,10)+(CASH_LOCKED?' · $ hidden (•••)':'');
+  const s1=[[{v:'Mera · Recreational Booked-PO Pivots',s:5}],[disc],[]];
+  _recPivBlock(s1,'Net Revenue by Province',P.months,P.province);
+  _recPivBlock(s1,'Net Revenue by Brand',P.months,P.brand);
+  _recPivBlock(s1,'Net Revenue by Category',P.months,P.category);
+  _recPivBlock(s1,'Net Revenue by PO',P.poMonths,P.onFlowPO,{filter:'Province = ON · Stocking Status = Flowthrough'});
+  const s2=[[{v:'Mera · Recreational Booked-PO Tables & Notes',s:5}],[disc+' · analyst commentary carried verbatim from the June-10 workbook'],[]];
+  _recPivBlock(s2,'Net Revenue by Province',P.months,P.province,{notes:true});
+  _recPivBlock(s2,'Net Revenue by Brand',P.months,P.brand,{notes:true});
+  _recPivBlock(s2,'Net Revenue by Category',P.months,P.category,{notes:true});
+  const cw1=[32,13,13,13,13,13,13,13,15];
+  const cw2=[32,13,13,13,13,13,13,13,15,54];
+  const bytes=buildXlsxMulti([
+    {name:'Rec - Pivots',aoa:s1,colWidths:cw1},
+    {name:'Rec tables',aoa:s2,colWidths:cw2}
+  ]);
+  _download(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Mera-Monthly Net Revenue_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.xlsx');
+}
 function currentExportModel(scope){
   const yr=curYr,page=curPage;
   if(!page||page==='overview')return null;
@@ -3108,6 +3165,7 @@ document.addEventListener('click',e=>{
     if(enterPw){openPw();return;}
   }
   if(b.dataset.export==='excel')exportExcel(scope);
+  else if(b.dataset.export==='execpivots')exportExecPivots();
   else if(b.dataset.export==='pdf')exportPDF();
 });
 
@@ -3117,11 +3175,11 @@ function _x_xmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function _x_colName(i){let s='';i++;while(i>0){let r=(i-1)%26;s=String.fromCharCode(65+r)+s;i=(i-r-1)/26;}return s;}
 function _x_crc32(u8){let c,crc=0xFFFFFFFF;for(let n=0;n<u8.length;n++){c=(crc^u8[n])&0xFF;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);crc=(crc>>>8)^c;}return (crc^0xFFFFFFFF)>>>0;}
 function _x_cellXml(ref,cell){
-  if(cell==null||cell==='')return '<c r="'+ref+'"/>';
-  const obj=(typeof cell==='object');
-  const isNum=obj?cell.t==='n':(typeof cell==='number');
+  const obj=(cell!=null&&typeof cell==='object');
   const val=obj?cell.v:cell;
   const sAttr=(obj&&cell.s)?' s="'+cell.s+'"':'';
+  if(val==null||val==='')return '<c r="'+ref+'"'+sAttr+'/>'; // empty; keeps style so blanks can still be bordered
+  const isNum=obj?cell.t==='n':(typeof cell==='number');
   if(isNum)return '<c r="'+ref+'"'+sAttr+'><v>'+val+'</v></c>';
   return '<c r="'+ref+'"'+sAttr+' t="inlineStr"><is><t xml:space="preserve">'+_x_xmlEsc(val)+'</t></is></c>';
 }
@@ -3158,24 +3216,33 @@ function _x_zip(files){
   for(const c of chunks){out.set(c,p);p+=c.length;}
   return out;
 }
-function buildXlsx(aoa,sheetName,opts){
-  opts=opts||{};
-  sheetName=(sheetName||'Sheet1').slice(0,31).replace(/[\\\/\?\*\[\]:]/g,'_');
-  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+function buildXlsxMulti(sheets){
+  sheets=(sheets||[]).map((s,i)=>({name:(s.name||('Sheet'+(i+1))).slice(0,31).replace(/[\\\/\?\*\[\]:]/g,'_'),aoa:s.aoa||[],colWidths:s.colWidths}));
+  if(!sheets.length)sheets=[{name:'Sheet1',aoa:[]}];
+  const n=sheets.length;
+  const ctOv=sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('');
+  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+ctOv+'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
   const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
-  const workbook='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+_x_xmlEsc(sheetName)+'" sheetId="1" r:id="rId1"/></sheets></workbook>';
-  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
-  // styles: cellXfs index 0 = default, index 1 = whole-dollar currency ("$"#,##0) for money columns
-  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0"/></numFmts><fonts count="1"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-  return _x_zip([
+  const sheetTags=sheets.map((s,i)=>'<sheet name="'+_x_xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('');
+  const workbook='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheetTags+'</sheets></workbook>';
+  const wsRels=sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('');
+  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+wsRels+'<Relationship Id="rId'+(n+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  /* styles — cellXfs indices (0 and 1 unchanged so single-sheet exports render identically):
+     0 default · 1 currency (no border) · 2 currency bordered body · 3 label bordered (left)
+     4 header (white bold on dark, centered) · 5 workbook title (bold 13) · 6 section title (bold)
+     7 grand-total currency (bold, light fill) · 8 grand-total label (bold, light fill) · 9 notes (bordered, wrapped) */
+  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0"/></numFmts><fonts count="4"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="13"/><color theme="1"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF223247"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEEF2F6"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD0D7DE"/></left><right style="thin"><color rgb="FFD0D7DE"/></right><top style="thin"><color rgb="FFD0D7DE"/></top><bottom style="thin"><color rgb="FFD0D7DE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="1" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const files=[
     {name:'[Content_Types].xml',data:_x_u8(contentTypes)},
     {name:'_rels/.rels',data:_x_u8(rels)},
     {name:'xl/workbook.xml',data:_x_u8(workbook)},
     {name:'xl/_rels/workbook.xml.rels',data:_x_u8(wbRels)},
-    {name:'xl/styles.xml',data:_x_u8(styles)},
-    {name:'xl/worksheets/sheet1.xml',data:_x_u8(_x_sheetXml(aoa,opts))}
-  ]);
+    {name:'xl/styles.xml',data:_x_u8(styles)}
+  ];
+  sheets.forEach((s,i)=>files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:_x_u8(_x_sheetXml(s.aoa,{colWidths:s.colWidths}))}));
+  return _x_zip(files);
 }
+function buildXlsx(aoa,sheetName,opts){opts=opts||{};return buildXlsxMulti([{name:sheetName,aoa:aoa,colWidths:opts.colWidths}]);}
 
 {const _es=document.getElementById('exportSlot');if(_es)_es.innerHTML=exportBox();}
 render('2026');
